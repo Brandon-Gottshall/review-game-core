@@ -1,0 +1,40 @@
+{
+  "name": "@brandon-gottshall/review-game-core",
+  "version": "0.1.0",
+  "description": "Shared primitives for concept-tree review games: types, mastery math, seeded generators, and a framework-agnostic well-formedness harness.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./wf-harness/vitest": {
+      "types": "./src/wf-harness/vitest.ts",
+      "default": "./src/wf-harness/vitest.ts"
+    },
+    "./wf-harness/jest": {
+      "types": "./src/wf-harness/jest.ts",
+      "default": "./src/wf-harness/jest.ts"
+    }
+  },
+  "files": [
+    "src",
+    "docs",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.2.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Brandon-Gottshall/review-game-core.git"
+  },
+  "license": "MIT",
+  "author": "Brandon Gottshall"
+}
