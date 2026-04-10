@@ -8,3 +8,9 @@
 export * from './question/index.js';
 export * from './concept/index.js';
 export * from './generator/index.js';
+export type {
+  ValidationGroup,
+  ValidationResult,
+  WFHarnessConfig,
+  WFHarnessPayloadSpec,
+} from './wf-harness/validators.js';
