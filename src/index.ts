@@ -6,3 +6,4 @@
  */
 
 export * from './question/index.js';
+export * from './concept/index.js';
