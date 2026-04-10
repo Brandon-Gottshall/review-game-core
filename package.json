@@ -1,7 +1,7 @@
 {
   "name": "@brandon-gottshall/review-game-core",
-  "version": "0.1.0",
-  "description": "Shared primitives for concept-tree review games: types, mastery math, seeded generators, and a framework-agnostic well-formedness harness.",
+  "version": "0.2.0",
+  "description": "Shared primitives for concept-tree review games: types, mastery math, scheduling, seeded generators, and a framework-agnostic well-formedness harness.",
   "type": "module",
   "exports": {
     ".": {

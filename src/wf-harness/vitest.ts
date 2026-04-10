@@ -8,6 +8,7 @@ import {
   validateGeneratorDeterminism,
   validateInteractivePayloadShape,
   validateRenderDispatch,
+  validateSchedulerHarness,
   validateTypeCoverage,
   type ValidationResult,
   type WFHarnessConfig,
@@ -37,7 +38,9 @@ function registerResults(results: ValidationResult[]): void {
   }
 }
 
-export function createWFHarness<TType extends string>(config: WFHarnessConfig<TType>) {
+export function createWFHarness<TType extends string, TSubskill extends string = string>(
+  config: WFHarnessConfig<TType, TSubskill>
+) {
   return {
     group1_typeCoverage() {
       registerResults(validateTypeCoverage(config));
@@ -56,6 +59,9 @@ export function createWFHarness<TType extends string>(config: WFHarnessConfig<TT
     },
     group6_generatorDeterminism() {
       registerResults(validateGeneratorDeterminism(config));
+    },
+    group7_schedulerCoverage() {
+      registerResults(validateSchedulerHarness(config));
     },
     all() {
       registerResults(validateAll(config));

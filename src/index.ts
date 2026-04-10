@@ -8,9 +8,15 @@
 export * from './question/index.js';
 export * from './concept/index.js';
 export * from './generator/index.js';
+export * from './scheduler/index.js';
 export type {
+  SchedulerSelectionScenario,
+  SchedulerStateExpectation,
+  SchedulerTransitionScenario,
+  SchedulerTransitionStep,
   ValidationGroup,
   ValidationResult,
   WFHarnessConfig,
   WFHarnessPayloadSpec,
+  WFHarnessSchedulerConfig,
 } from './wf-harness/validators.js';

@@ -1,17 +1,73 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { isDeepStrictEqual } from 'node:util';
+import { inspect, isDeepStrictEqual } from 'node:util';
 
 import type { ConceptNode } from '../concept/index.js';
 import type { Generator } from '../generator/index.js';
 import type { Question } from '../question/index.js';
+import {
+  applyConceptOutcome,
+  applySupplementalConceptExposure,
+  buildInitialConceptSchedule,
+  createSchedulerPolicy,
+  mergeConceptSchedule,
+  pickNextConceptId,
+  type PracticeOutcome,
+  type SchedulerPolicy,
+  type SchedulerPolicyConfig,
+  type SubskillUpdate,
+} from '../scheduler/index.js';
 
 export interface WFHarnessPayloadSpec {
   payloadKey: string;
   requiredKeys: readonly string[];
 }
 
-export interface WFHarnessConfig<TType extends string = string> {
+export interface SchedulerStateExpectation {
+  conceptId: string;
+  path: string;
+  expected: unknown;
+}
+
+export type SchedulerTransitionStep<TSubskill extends string = string> =
+  | {
+      kind: 'outcome';
+      conceptId: string;
+      currentTurn: number;
+      outcome: PracticeOutcome;
+      subskillUpdates?: readonly SubskillUpdate<TSubskill>[];
+    }
+  | {
+      kind: 'supplemental';
+      conceptId: string;
+      currentTurn: number;
+      wasClean?: boolean;
+      subskillUpdates?: readonly SubskillUpdate<TSubskill>[];
+    };
+
+export interface SchedulerTransitionScenario<TSubskill extends string = string> {
+  name: string;
+  initialStored?: unknown;
+  steps: readonly SchedulerTransitionStep<TSubskill>[];
+  expectations: readonly SchedulerStateExpectation[];
+}
+
+export interface SchedulerSelectionScenario<TSubskill extends string = string> {
+  name: string;
+  initialStored?: unknown;
+  steps?: readonly SchedulerTransitionStep<TSubskill>[];
+  nextTurn: number;
+  expectedConceptId: string;
+  eligibleConceptIds?: readonly string[];
+}
+
+export interface WFHarnessSchedulerConfig<TSubskill extends string = string> {
+  policy?: SchedulerPolicy<TSubskill> | SchedulerPolicyConfig<TSubskill>;
+  transitionScenarios?: readonly SchedulerTransitionScenario<TSubskill>[];
+  selectionScenarios?: readonly SchedulerSelectionScenario<TSubskill>[];
+}
+
+export interface WFHarnessConfig<TType extends string = string, TSubskill extends string = string> {
   registeredTypes: readonly TType[];
   renderInteractiveCases: readonly TType[];
   interactivePayloadMap: Partial<Record<TType, WFHarnessPayloadSpec>>;
@@ -20,6 +76,7 @@ export interface WFHarnessConfig<TType extends string = string> {
   generators: readonly Generator<Question<TType>>[];
   quizClientPath?: string;
   renderPatternFor?: (type: string) => RegExp;
+  scheduler?: WFHarnessSchedulerConfig<TSubskill>;
 }
 
 export interface ValidationResult {
@@ -42,6 +99,7 @@ export const WF_GROUP_NAMES = {
   4: 'Boundary check',
   5: 'Concept consistency',
   6: 'Generator determinism',
+  7: 'Scheduler coverage',
 } as const satisfies Record<number, string>;
 
 export const WF_SAMPLE_SEEDS = [1, 42, 100, 2024, 99999] as const;
@@ -90,8 +148,8 @@ function readQuizClientSource(quizClientPath: string): string {
   return fs.readFileSync(path.resolve(process.cwd(), quizClientPath), 'utf8');
 }
 
-export function validateTypeCoverage<TType extends string>(
-  config: WFHarnessConfig<TType>
+export function validateTypeCoverage<TType extends string, TSubskill extends string = string>(
+  config: WFHarnessConfig<TType, TSubskill>
 ): ValidationResult[] {
   const registered = new Set<string>(config.registeredTypes);
   const unknownTypes = Array.from(
@@ -120,8 +178,8 @@ export function validateTypeCoverage<TType extends string>(
   ];
 }
 
-export function validateRenderDispatch<TType extends string>(
-  config: WFHarnessConfig<TType>
+export function validateRenderDispatch<TType extends string, TSubskill extends string = string>(
+  config: WFHarnessConfig<TType, TSubskill>
 ): ValidationResult[] {
   if (!config.quizClientPath) {
     return [
@@ -177,8 +235,8 @@ export function validateRenderDispatch<TType extends string>(
   ];
 }
 
-export function validateInteractivePayloadShape<TType extends string>(
-  config: WFHarnessConfig<TType>
+export function validateInteractivePayloadShape<TType extends string, TSubskill extends string = string>(
+  config: WFHarnessConfig<TType, TSubskill>
 ): ValidationResult[] {
   const results: ValidationResult[] = [];
 
@@ -234,8 +292,8 @@ export function validateInteractivePayloadShape<TType extends string>(
   ];
 }
 
-export function validateBoundaryCheck<TType extends string>(
-  config: WFHarnessConfig<TType>
+export function validateBoundaryCheck<TType extends string, TSubskill extends string = string>(
+  config: WFHarnessConfig<TType, TSubskill>
 ): ValidationResult[] {
   const payloadKeys = Array.from(
     new Set(
@@ -293,8 +351,8 @@ export function validateBoundaryCheck<TType extends string>(
   ];
 }
 
-export function validateConceptConsistency<TType extends string>(
-  config: WFHarnessConfig<TType>
+export function validateConceptConsistency<TType extends string, TSubskill extends string = string>(
+  config: WFHarnessConfig<TType, TSubskill>
 ): ValidationResult[] {
   const idCounts = new Map<string, number>();
   for (const question of config.questionPool) {
@@ -342,8 +400,8 @@ export function validateConceptConsistency<TType extends string>(
   ];
 }
 
-export function validateGeneratorDeterminism<TType extends string>(
-  config: WFHarnessConfig<TType>
+export function validateGeneratorDeterminism<TType extends string, TSubskill extends string = string>(
+  config: WFHarnessConfig<TType, TSubskill>
 ): ValidationResult[] {
   const registeredTypes = new Set<string>(config.registeredTypes);
   const conceptIds = new Set(config.conceptTree.map(concept => concept.id));
@@ -427,8 +485,192 @@ export function validateGeneratorDeterminism<TType extends string>(
   ];
 }
 
-export function validateAll<TType extends string>(
-  config: WFHarnessConfig<TType>
+function getSchedulerConceptIds<TType extends string, TSubskill extends string>(
+  config: WFHarnessConfig<TType, TSubskill>
+): string[] {
+  return config.conceptTree.map((concept) => concept.id);
+}
+
+function runSchedulerSteps<TSubskill extends string>(
+  conceptIds: readonly string[],
+  policy: SchedulerPolicy<TSubskill>,
+  initialStored: unknown,
+  steps: readonly SchedulerTransitionStep<TSubskill>[],
+  scenarioName: string
+): { failures: string[]; progressMap: ReturnType<typeof mergeConceptSchedule<TSubskill>> } {
+  const failures: string[] = [];
+  let progressMap = mergeConceptSchedule(conceptIds, initialStored, policy);
+
+  for (const step of steps) {
+    if (!(step.conceptId in progressMap)) {
+      failures.push(`${scenarioName}: step references unknown concept '${step.conceptId}'`);
+      continue;
+    }
+
+    progressMap = step.kind === 'outcome'
+      ? applyConceptOutcome(progressMap, step.conceptId, step.outcome, step.currentTurn, {
+          policy,
+          subskillUpdates: step.subskillUpdates,
+        })
+      : applySupplementalConceptExposure(progressMap, step.conceptId, step.currentTurn, {
+          policy,
+          subskillUpdates: step.subskillUpdates,
+          wasClean: step.wasClean,
+        });
+  }
+
+  return { failures, progressMap };
+}
+
+export function validateSchedulerHarness<TType extends string, TSubskill extends string = string>(
+  config: WFHarnessConfig<TType, TSubskill>
+): ValidationResult[] {
+  if (!config.scheduler) {
+    return [
+      createResult(
+        7,
+        'scheduler validation is skipped when scheduler config is omitted',
+        []
+      ),
+    ];
+  }
+
+  let policy: SchedulerPolicy<TSubskill>;
+  const policyFailures: string[] = [];
+  try {
+    policy = createSchedulerPolicy(config.scheduler.policy ?? {});
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return [
+      createResult(
+        7,
+        'scheduler policy can be resolved',
+        [`scheduler policy is invalid: ${message}`]
+      ),
+      createResult(
+        7,
+        'scheduler build/merge preserves the configured concept set',
+        []
+      ),
+      createResult(
+        7,
+        'scheduler transition scenarios match expected state',
+        []
+      ),
+      createResult(
+        7,
+        'scheduler selection scenarios choose the expected concept',
+        []
+      ),
+    ];
+  }
+
+  const conceptIds = getSchedulerConceptIds(config);
+  const conceptSetFailures: string[] = [];
+
+  const initialSchedule = buildInitialConceptSchedule(conceptIds, policy);
+  const initialIds = Object.keys(initialSchedule);
+  if (!isDeepStrictEqual(initialIds, conceptIds)) {
+    conceptSetFailures.push(
+      `buildInitialConceptSchedule returned concept ids ${inspect(initialIds)} instead of ${inspect(conceptIds)}`
+    );
+  }
+
+  const mergedSchedule = mergeConceptSchedule(conceptIds, {
+    __wf_harness_orphan__: {
+      independentPassCount: policy.masteryTarget + 1,
+    },
+  }, policy);
+  const mergedIds = Object.keys(mergedSchedule);
+  if (!isDeepStrictEqual(mergedIds, conceptIds)) {
+    conceptSetFailures.push(
+      `mergeConceptSchedule returned concept ids ${inspect(mergedIds)} instead of ${inspect(conceptIds)}`
+    );
+  }
+  if ('__wf_harness_orphan__' in mergedSchedule) {
+    conceptSetFailures.push('mergeConceptSchedule preserved an orphan stored concept');
+  }
+
+  const transitionFailures: string[] = [];
+  for (const scenario of config.scheduler.transitionScenarios ?? []) {
+    const run = runSchedulerSteps(
+      conceptIds,
+      policy,
+      scenario.initialStored ?? {},
+      scenario.steps,
+      scenario.name
+    );
+
+    transitionFailures.push(...run.failures);
+    for (const expectation of scenario.expectations) {
+      const conceptState = run.progressMap[expectation.conceptId];
+      if (!conceptState) {
+        transitionFailures.push(
+          `${scenario.name}: expectation references unknown concept '${expectation.conceptId}'`
+        );
+        continue;
+      }
+
+      const actual = getByPath(conceptState, expectation.path);
+      if (!isDeepStrictEqual(actual, expectation.expected)) {
+        transitionFailures.push(
+          `${scenario.name}: ${expectation.conceptId}.${expectation.path} expected ${inspect(expectation.expected)} but found ${inspect(actual)}`
+        );
+      }
+    }
+  }
+
+  const selectionFailures: string[] = [];
+  for (const scenario of config.scheduler.selectionScenarios ?? []) {
+    const run = runSchedulerSteps(
+      conceptIds,
+      policy,
+      scenario.initialStored ?? {},
+      scenario.steps ?? [],
+      scenario.name
+    );
+
+    selectionFailures.push(...run.failures);
+    const eligibleIds = scenario.eligibleConceptIds
+      ? new Set(scenario.eligibleConceptIds)
+      : null;
+
+    const actual = pickNextConceptId(run.progressMap, scenario.nextTurn, {
+      policy,
+      isEligible: eligibleIds
+        ? (conceptId) => eligibleIds.has(conceptId)
+        : undefined,
+    });
+
+    if (actual !== scenario.expectedConceptId) {
+      selectionFailures.push(
+        `${scenario.name}: expected pickNextConceptId(...) to return '${scenario.expectedConceptId}' but found '${actual}'`
+      );
+    }
+  }
+
+  return [
+    createResult(7, 'scheduler policy can be resolved', policyFailures),
+    createResult(
+      7,
+      'scheduler build/merge preserves the configured concept set',
+      conceptSetFailures
+    ),
+    createResult(
+      7,
+      'scheduler transition scenarios match expected state',
+      transitionFailures
+    ),
+    createResult(
+      7,
+      'scheduler selection scenarios choose the expected concept',
+      selectionFailures
+    ),
+  ];
+}
+
+export function validateAll<TType extends string, TSubskill extends string = string>(
+  config: WFHarnessConfig<TType, TSubskill>
 ): ValidationResult[] {
   return [
     ...validateTypeCoverage(config),
@@ -437,6 +679,7 @@ export function validateAll<TType extends string>(
     ...validateBoundaryCheck(config),
     ...validateConceptConsistency(config),
     ...validateGeneratorDeterminism(config),
+    ...validateSchedulerHarness(config),
   ];
 }
 

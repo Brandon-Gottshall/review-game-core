@@ -2,12 +2,13 @@
 
 Shared primitives for concept-tree review games. Pure logic and types — zero runtime dependencies, no UI, no framework lock-in.
 
-## What's inside (v0.1)
+## What's inside (v0.2)
 
 - **Question types** — generic `Question<TType>` + open `InteractiveData` bag
 - **Concept tree** — `ConceptNode`, mastery math, prerequisite unlock logic
+- **Scheduler** — policy-driven concept scheduling, retention, recovery, and next-concept selection
 - **Generators** — `mulberry32` seeded PRNG + `Generator<Q>` interface
-- **WF harness** — framework-agnostic validators for 6 well-formedness groups, with `vitest` and `jest` adapters
+- **WF harness** — framework-agnostic validators for 7 well-formedness groups, with `vitest` and `jest` adapters
 
 ## Install
 
@@ -15,7 +16,7 @@ Shared primitives for concept-tree review games. Pure logic and types — zero r
 // package.json
 {
   "dependencies": {
-    "@brandon-gottshall/review-game-core": "github:Brandon-Gottshall/review-game-core#v0.1.0"
+    "@brandon-gottshall/review-game-core": "github:Brandon-Gottshall/review-game-core#v0.2.0"
   }
 }
 ```
@@ -32,6 +33,29 @@ interface MyInteractive { traceData?: { /* ... */ }; }
 
 export type MyQuestion = Question<MyGameType> & { interactive?: MyInteractive };
 ```
+
+## Usage — scheduler
+
+```ts
+import {
+  applyConceptOutcome,
+  buildInitialConceptSchedule,
+  createSchedulerPolicy,
+  pickNextConceptId,
+} from '@brandon-gottshall/review-game-core';
+
+const policy = createSchedulerPolicy({
+  masteryTarget: 3,
+  subskillIds: ['recognition', 'structure'] as const,
+});
+
+let schedule = buildInitialConceptSchedule(['loops', 'arrays'], policy);
+schedule = applyConceptOutcome(schedule, 'loops', 'independent_correct', 1, { policy });
+
+const nextConceptId = pickNextConceptId(schedule, 4, { policy });
+```
+
+The scheduler is deliberately policy-only. Consumers supply any prerequisite gating through `pickNextConceptId({ isEligible })` and own their own UI/status text.
 
 ## Usage — WF harness (vitest)
 
@@ -53,6 +77,27 @@ createWFHarness({
   conceptTree,
   generators,
   quizClientPath: 'app/quiz/quiz-client.tsx',
+  scheduler: {
+    policy: {
+      masteryTarget: 3,
+      independentGaps: [2, 5, 8],
+      supportedGap: 1,
+      failureGap: 1,
+      subskillIds: ['recognition', 'structure'],
+    },
+    transitionScenarios: [
+      {
+        name: 'first clean pass spaces the concept',
+        steps: [
+          { kind: 'outcome', conceptId: 'basics', currentTurn: 1, outcome: 'independent_correct' },
+        ],
+        expectations: [
+          { conceptId: 'basics', path: 'independentPassCount', expected: 1 },
+          { conceptId: 'basics', path: 'nextEligibleTurn', expected: 4 },
+        ],
+      },
+    ],
+  },
 }).all();
 ```
 
