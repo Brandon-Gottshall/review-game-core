@@ -5,8 +5,8 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./wf-harness/vitest": {
       "types": "./src/wf-harness/vitest.ts",
@@ -19,10 +19,14 @@
   },
   "files": [
     "src",
+    "dist",
     "docs",
-    "README.md"
+    "README.md",
+    "tsconfig.build.json"
   ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "npm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
