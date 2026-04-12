@@ -8,4 +8,9 @@ export * from './question/index.js';
 export * from './concept/index.js';
 export * from './generator/index.js';
 export * from './scheduler/index.js';
+export * from './workflow/session.js';
+export * from './workflow/persistence.js';
+export * from './workflow/debug.js';
+export * from './workflow/quiz-engine.js';
+export * from './workflow/rendering.js';
 //# sourceMappingURL=index.js.map

@@ -185,7 +185,7 @@ function createBaseConfig(): WFHarnessConfig<ToyType, 'recognition' | 'structure
 }
 
 describe('validateAll', () => {
-  it('passes all 6 groups for a well-formed toy config', () => {
+  it('passes all 7 groups for a well-formed toy config', () => {
     const results = validateAll(createBaseConfig());
 
     expect(results.every(result => result.passed)).toBe(true);

@@ -1,12 +1,32 @@
 {
   "name": "@brandon-gottshall/review-game-core",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "Shared primitives for concept-tree review games: types, mastery math, scheduling, seeded generators, and a framework-agnostic well-formedness harness.",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./workflow/session": {
+      "types": "./src/workflow/session.ts",
+      "default": "./src/workflow/session.ts"
+    },
+    "./workflow/persistence": {
+      "types": "./src/workflow/persistence.ts",
+      "default": "./src/workflow/persistence.ts"
+    },
+    "./workflow/debug": {
+      "types": "./src/workflow/debug.ts",
+      "default": "./src/workflow/debug.ts"
+    },
+    "./workflow/quiz-engine": {
+      "types": "./src/workflow/quiz-engine.ts",
+      "default": "./src/workflow/quiz-engine.ts"
+    },
+    "./workflow/rendering": {
+      "types": "./src/workflow/rendering.ts",
+      "default": "./src/workflow/rendering.ts"
     },
     "./wf-harness/vitest": {
       "types": "./src/wf-harness/vitest.ts",

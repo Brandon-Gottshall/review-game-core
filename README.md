@@ -8,6 +8,7 @@ Shared primitives for concept-tree review games. Pure logic and types — zero r
 - **Concept tree** — `ConceptNode`, mastery math, prerequisite unlock logic
 - **Scheduler** — policy-driven concept scheduling, retention, recovery, and next-concept selection
 - **Generators** — `mulberry32` seeded PRNG + `Generator<Q>` interface
+- **Workflow core** — session snapshots, persistence contracts, debug-route normalization, quiz-engine state helpers, and renderer registries
 - **WF harness** — framework-agnostic validators for 7 well-formedness groups, with `vitest` and `jest` adapters
 
 ## Install
@@ -56,6 +57,18 @@ const nextConceptId = pickNextConceptId(schedule, 4, { policy });
 ```
 
 The scheduler is deliberately policy-only. Consumers supply any prerequisite gating through `pickNextConceptId({ isEligible })` and own their own UI/status text.
+
+## Usage — workflow core
+
+The `workflow/*` subpaths are pure TS helpers for the consumer app shell and debug contracts. They keep the shared boundary explicit:
+
+- `workflow/session` for storage keys, snapshot normalization, and reset/restore helpers
+- `workflow/persistence` for adapter contracts and in-memory test doubles
+- `workflow/debug` for the `wf=1` deterministic browser-forcing query contract
+- `workflow/quiz-engine` for routing, staged-answer, support/recovery, and completion transitions
+- `workflow/rendering` for renderer registries and coverage helpers
+
+The browser WF harness lives in consumer repos. This package defines the debug/query and state contracts those browser checks exercise, but not the browser harness itself.
 
 ## Usage — WF harness (vitest)
 
@@ -108,6 +121,20 @@ Identical API; import from `/wf-harness/jest` instead.
 ## Stability
 
 v0.x is unstable. Each new game onboarded to the package may trigger breaking minor bumps. Pin by tag.
+
+## WF contract
+
+The core WF harness validates 7 groups:
+
+1. Question type coverage
+2. Render dispatch coverage
+3. Interactive payload shape
+4. Boundary check
+5. Concept consistency
+6. Generator determinism
+7. Scheduler coverage
+
+Groups 2, 3, and 7 can be skipped when their optional config is omitted. This is a static contract check only. Browser-attached workflow validation belongs in each consumer repo and should exercise deterministic debug routes built on `workflow/debug`.
 
 ## License
 

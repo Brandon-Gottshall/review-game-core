@@ -77,7 +77,11 @@ export interface ValidationResult {
 ```
 This is 357 lines of game-specific constants woven into vitest calls. Extract the logic, parameterize the constants.
 
-**Self-test:** Create `tests/wf-harness.test.ts` that builds a toy config (3 fake question types, 2 concepts, 1 generator) and asserts all 6 groups pass. Also test failure cases (orphan concept, missing payload, non-deterministic generator).
+**Self-test:** Create `tests/wf-harness.test.ts` that builds a toy config (3 fake question types, 2 concepts, 1 generator) and asserts all 7 groups pass. Also test failure cases (orphan concept, missing payload, non-deterministic generator).
+
+## Workflow boundary
+
+The new `src/workflow/*` modules are pure TS contracts for session state, persistence, deterministic debug routes, quiz-engine transitions, and renderer registries. They define the shared contract that consumer browser WF harnesses exercise, but they do not implement the browser harness itself.
 
 ### C6: Test framework adapters
 
@@ -91,7 +95,7 @@ import { validateAll, type WFHarnessConfig } from './validators.js';
 export function createWFHarness<TType extends string>(config: WFHarnessConfig<TType>) {
   return {
     group1_typeCoverage() { /* wrap group 1 results in describe/it/expect */ },
-    // ... groups 2-6
+    // ... groups 2-7
     all() { /* run all groups */ },
   };
 }
@@ -184,7 +188,7 @@ Unit 2 content build was paused to prioritize this extraction. Status:
 
 | Step | Status | Notes |
 |------|--------|-------|
-| A6: WF harness | Done (`187047b`) | 22 tests, 6 groups |
+| A6: WF harness | Done (`187047b`) | 22 tests, 7 groups |
 | A1: Java parser Ch3-4 | Done (`5e53712`) | tokens + parser + visitor + 16 new test cases, 109/109 green |
 | A2: Concept tree (28 new Ch3-4 nodes) | Not started | |
 | A4: 8 new generators | Not started | |
