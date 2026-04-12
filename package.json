@@ -9,32 +9,32 @@
       "default": "./dist/index.js"
     },
     "./workflow/session": {
-      "types": "./src/workflow/session.ts",
-      "default": "./src/workflow/session.ts"
+      "types": "./dist/workflow/session.d.ts",
+      "default": "./dist/workflow/session.js"
     },
     "./workflow/persistence": {
-      "types": "./src/workflow/persistence.ts",
-      "default": "./src/workflow/persistence.ts"
+      "types": "./dist/workflow/persistence.d.ts",
+      "default": "./dist/workflow/persistence.js"
     },
     "./workflow/debug": {
-      "types": "./src/workflow/debug.ts",
-      "default": "./src/workflow/debug.ts"
+      "types": "./dist/workflow/debug.d.ts",
+      "default": "./dist/workflow/debug.js"
     },
     "./workflow/quiz-engine": {
-      "types": "./src/workflow/quiz-engine.ts",
-      "default": "./src/workflow/quiz-engine.ts"
+      "types": "./dist/workflow/quiz-engine.d.ts",
+      "default": "./dist/workflow/quiz-engine.js"
     },
     "./workflow/rendering": {
-      "types": "./src/workflow/rendering.ts",
-      "default": "./src/workflow/rendering.ts"
+      "types": "./dist/workflow/rendering.d.ts",
+      "default": "./dist/workflow/rendering.js"
     },
     "./wf-harness/vitest": {
-      "types": "./src/wf-harness/vitest.ts",
-      "default": "./src/wf-harness/vitest.ts"
+      "types": "./dist/wf-harness/vitest.d.ts",
+      "default": "./dist/wf-harness/vitest.js"
     },
     "./wf-harness/jest": {
-      "types": "./src/wf-harness/jest.ts",
-      "default": "./src/wf-harness/jest.ts"
+      "types": "./dist/wf-harness/jest.d.ts",
+      "default": "./dist/wf-harness/jest.js"
     }
   },
   "files": [
