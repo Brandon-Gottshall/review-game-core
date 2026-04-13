@@ -37,6 +37,25 @@ export interface SessionSnapshotFactoryOptions {
   now?: string;
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Normalize a learner identifier to lowercase, trimmed form.
+ * Returns an empty string for null/undefined/blank inputs.
+ */
+export function normalizeLearnerId(value?: string | null): string {
+  return value?.trim().toLowerCase() ?? '';
+}
+
+/**
+ * Returns true when the given value looks like a valid email address.
+ * Used to distinguish email-attached learners from anonymous browser IDs.
+ */
+export function isEmailLearnerId(value?: string | null): boolean {
+  const normalized = normalizeLearnerId(value);
+  return normalized.length > 0 && EMAIL_PATTERN.test(normalized);
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
