@@ -2,6 +2,21 @@
 
 Shared primitives for concept-tree review games. Pure logic and types — zero runtime dependencies, no UI, no framework lock-in.
 
+## Product framing
+
+These repos may present as "review games," but the stronger product pattern is often concept-first learning with proof-oriented assessment layered on top.
+
+In that model:
+
+- the learner identifies the governing idea before heavy computation
+- the system checks setup/structure before demanding a full solution
+- independent computation acts as proof of mastery, not the first contact with the concept
+- support can fade as mastery appears and return when the learner slips
+
+That framing matters for both content design and UI language. "Review" remains a valid mode, especially for cram or compression workflows, but consumer apps should not assume every primary path is review-only.
+
+See [docs/product-framing.md](./docs/product-framing.md) for the shared position.
+
 ## What's inside (v0.2)
 
 - **Question types** — generic `Question<TType>` + open `InteractiveData` bag
