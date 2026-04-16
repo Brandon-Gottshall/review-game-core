@@ -15,7 +15,9 @@ It owns:
 - ordered plans and phases
 - count-based phase snapshots
 - local-date deadline evaluation
-- derived recommendation state such as `primary`, `catch_up`, `queued`, and `complete`
+- derived recommendation state
+
+A phase resolves to one of four recommendation roles: `primary` (the track to work on next), `catch_up` (behind schedule), `queued` (waiting on an earlier phase), or `complete`.
 
 It does **not** own:
 

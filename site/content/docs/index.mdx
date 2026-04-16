@@ -8,16 +8,17 @@ relatedFeatures:
   - scheduler
 ---
 
-`review-game-core` is the shared package behind the review-game repos in this workspace. It is not a UI kit and it is not a learner platform. It is a collection of pure TypeScript contracts and helpers for:
+`review-game-core` is the shared package behind the review-game repos in this workspace. It ships pure TypeScript contracts and helpers for:
 
 - concept-first question flows
+- the six-phase quiz engine
 - policy-driven concept scheduling
 - ordered planning and goal evaluation
 - workflow session and debug contracts
 - WF well-formedness validation
 - graph projection for authored learning structure
 
-The site is intentionally split into three surfaces:
+The site has three surfaces:
 
 - `/` for the package showcase and consumer examples
 - `/showcase/features` for feature-by-feature examples

@@ -3,16 +3,21 @@ import {
   buildInitialConceptSchedule,
   buildSessionStorageKey,
   buildWorkflowDebugRoute,
-  compareShadowResult,
   createSchedulerPolicy,
   createSessionIdentity,
   createSessionSnapshot,
   evaluateGoalPlan,
   pickNextConceptId,
   applyConceptOutcome,
+  type ConceptNode,
   type GoalPhaseSnapshot,
   type GoalPlan,
+  type Question,
 } from '@brandon-gottshall/review-game-core'
+import {
+  validateConceptConsistency,
+  type WFHarnessConfig,
+} from '@brandon-gottshall/review-game-core/wf-harness/validators'
 
 import type { ExamplePanelData } from '@/lib/types'
 
@@ -117,18 +122,47 @@ export const examplePanels: Record<string, ExamplePanelData> = {
       },
     } satisfies ExamplePanelData
   })(),
-  'wf-harness': {
-    label: 'WF comparison helper',
-    description: 'The query layer includes tiny utilities that help consumer repos compare primary and shadow runs deterministically.',
-    input: {
-      primary: { conceptId: 'factoring', match: true },
-      shadow: { conceptId: 'factoring', match: true },
-    },
-    output: compareShadowResult(
-      { conceptId: 'factoring', match: true },
-      { conceptId: 'factoring', match: true },
-    ),
-  },
+  'wf-harness': (() => {
+    const questionPool: readonly Question<'multiple_choice'>[] = [
+      {
+        id: 'q1',
+        type: 'multiple_choice',
+        concept: 'factoring',
+        question: 'Factor x^2 - 1.',
+        correctAnswer: '(x-1)(x+1)',
+      },
+      {
+        id: 'q1',
+        type: 'multiple_choice',
+        concept: 'orphan',
+        question: 'Duplicate id with unknown concept.',
+        correctAnswer: 'x',
+      },
+    ]
+    const conceptTree: readonly ConceptNode[] = [
+      {
+        id: 'factoring',
+        name: 'Factoring',
+        description: 'Factor quadratics of the form x^2 + bx + c.',
+        prerequisites: [],
+        questionIds: ['q1'],
+      },
+    ]
+    const config: WFHarnessConfig<'multiple_choice'> = {
+      registeredTypes: ['multiple_choice'],
+      renderInteractiveCases: [],
+      interactivePayloadMap: {},
+      questionPool,
+      conceptTree,
+      generators: [],
+    }
+    return {
+      label: 'WF harness validation',
+      description: 'The harness flags duplicate IDs and concepts missing from the tree before browser regression runs.',
+      input: { questionPool, conceptTree },
+      output: validateConceptConsistency(config),
+    } satisfies ExamplePanelData
+  })(),
   'graph-subsystem': {
     label: 'Projection relationship shape',
     description: 'Graph contracts define canonical ladders, objectives, and artifacts without forcing the graph to own app state.',

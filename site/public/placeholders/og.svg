@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <radialGradient id="bgGlow" cx="15%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#bd4d12" stop-opacity="0.18" />
+      <stop offset="70%" stop-color="#bd4d12" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="rgGrad" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#bd4d12" />
+      <stop offset="100%" stop-color="#f28d3f" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#f3efe7" />
+  <rect width="1200" height="630" fill="url(#bgGlow)" />
+
+  <!-- RG badge -->
+  <g transform="translate(80 80)">
+    <rect width="60" height="60" rx="14" fill="url(#rgGrad)" />
+    <text x="30" y="40" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="#ffffff" text-anchor="middle">RG</text>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="80" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="88" font-weight="700" fill="#101114" letter-spacing="-3">review-game-core</text>
+
+  <!-- Headline -->
+  <text x="80" y="350" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="400" fill="#4c4b46">Route the learner. Stage the proof.</text>
+  <text x="80" y="395" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="400" fill="#4c4b46">Schedule the return.</text>
+
+  <!-- Eyebrow -->
+  <text x="80" y="490" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="600" fill="#7e2c08" letter-spacing="2">QUIZ ENGINE · SCHEDULER · GOAL EVALUATOR</text>
+
+  <!-- Code tile bottom-right -->
+  <g transform="translate(720 420)">
+    <rect width="400" height="160" rx="16" fill="#141517" />
+    <text x="24" y="40" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="14" fill="#f6f0e5">
+      <tspan x="24" dy="0"><tspan fill="#f28d3f">import</tspan> { evaluateGoalPlan }</tspan>
+      <tspan x="24" dy="22"><tspan fill="#f28d3f">from</tspan> <tspan fill="#9cd17c">'review-game-core'</tspan></tspan>
+      <tspan x="24" dy="36"><tspan fill="#f28d3f">const</tspan> plan = evaluateGoalPlan(</tspan>
+      <tspan x="24" dy="22">  plan, snapshots, ctx,</tspan>
+      <tspan x="24" dy="22">)</tspan>
+    </text>
+  </g>
+</svg>

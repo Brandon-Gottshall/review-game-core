@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="statsGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#bd4d12" />
+      <stop offset="100%" stop-color="#f28d3f" />
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="24" fill="url(#statsGrad)" />
+  <!-- Bar chart glyph -->
+  <g fill="#ffffff">
+    <rect x="28" y="70" width="12" height="24" rx="2" opacity="0.7" />
+    <rect x="46" y="56" width="12" height="38" rx="2" opacity="0.85" />
+    <rect x="64" y="44" width="12" height="50" rx="2" />
+    <rect x="82" y="60" width="12" height="34" rx="2" opacity="0.75" />
+  </g>
+  <!-- Monogram ST corner -->
+  <text x="60" y="36" font="600 18px system-ui, sans-serif" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">ST</text>
+</svg>

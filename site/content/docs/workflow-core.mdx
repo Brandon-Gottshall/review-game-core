@@ -1,6 +1,6 @@
 ---
 title: Workflow Core
-description: Session identity, persistence, deterministic debug routes, and lightweight quiz-engine helpers.
+description: Six-phase quiz engine with session, persistence, and deterministic debug contracts.
 section: Runtime
 order: 1
 apiSurface: workflow/session, workflow/debug, workflow/quiz-engine
@@ -8,11 +8,24 @@ relatedFeatures:
   - workflow-core
 ---
 
-The workflow layer exists so consumer repos do not have to reinvent session and debug contracts for every game.
+The workflow layer drives one quiz turn. The quiz engine runs it through six phases; session and debug helpers are the contracts the engine leans on so consumer shells can persist, restore, and force routes deterministically.
+
+## The six-phase quiz engine
+
+Every turn moves through these phases:
+
+- **routing** — pick a concept and a question for the learner.
+- **question** — present the question and wait for the first answer.
+- **staged-answer** — walk the learner through the stages the question defines (recognize, structure, prove).
+- **support** — open scaffolding when the learner stalls on a stage.
+- **recovery** — run a lighter retry after failed support.
+- **complete** — mark the question finished and hand control back to routing.
+
+The phase names come straight from the `QuizEnginePhase` union in `src/workflow/quiz-engine.ts`. Consumer games render whatever UI fits the phase; the core owns the state machine.
 
 ## Session helpers
 
-Use `workflow/session` for:
+`workflow/session` gives consumer shells:
 
 - normalized learner IDs
 - session identity records
@@ -21,18 +34,6 @@ Use `workflow/session` for:
 
 ## Debug helpers
 
-Use `workflow/debug` for deterministic query contracts such as `wf=1`, seeded routes, fixed concepts, restore flags, and support forcing.
+`workflow/debug` exposes deterministic query contracts — `wf=1`, seeded routes, fixed concepts, restore flags, and support forcing — so repo-owned browser harnesses can reach any phase without clicking through the whole loop.
 
-Those helpers are important because repo-owned browser harnesses depend on stable debug semantics, even though they are not proof of WF completeness on their own.
-
-## Quiz engine helpers
-
-Use `workflow/quiz-engine` when you want a tiny reducer-friendly state contract for:
-
-- routing
-- staged answers
-- support
-- recovery
-- completion
-
-See the [workflow feature page](/showcase/features/workflow-core) for a snapshot and debug-route example.
+See the [workflow feature page](/showcase/features/workflow-core) for the snapshot and debug-route example.

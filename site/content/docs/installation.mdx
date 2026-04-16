@@ -16,7 +16,7 @@ Install the package from GitHub:
 }
 ```
 
-Inside this repository, the `site/` app depends on the root package through a repo-local path dependency. That is still deployment-safe because the official Vercel path is a Git-connected build from the full `review-game-core` checkout, not a subdirectory-only CLI upload.
+Inside this repository, the `site/` app depends on the root package through a repo-local path dependency. The official Vercel build starts from a Git-connected checkout of the full repo, so the path dependency resolves at build time.
 
 ```json
 {
@@ -42,9 +42,9 @@ The official deployment path for the docs site is:
 2. let Vercel build the `site/` root directory from the `review-game-core` repo
 3. merge to the production branch for the production deployment
 
-Local `vercel deploy` from inside `site/` is not the supported path because it uploads only the subdirectory and breaks repo-root package resolution.
+Use the Git-connected Vercel path. A local `vercel deploy` from inside `site/` uploads only the subdirectory and breaks repo-root package resolution.
 
-## Important boundary
+## What the package owns, what consumers own
 
 The package is source-first and pure logic. Consumer repos own:
 

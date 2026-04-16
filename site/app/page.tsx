@@ -1,22 +1,33 @@
 import Link from 'next/link'
 
+import { ConsumerStrip } from '@/components/consumer-strip'
 import { getFeatureEntries, getShowcaseExamples, listDocPages } from '@/lib/content'
+
+const heroSnippet = `import { evaluateGoalPlan } from '@brandon-gottshall/review-game-core'
+
+const evaluation = evaluateGoalPlan(plan, snapshots, {
+  localDate: '2026-04-16',
+})
+
+const nextTrack = evaluation.trackPriority[0]
+// evaluation.activePhase.recommendationRole
+//   → 'primary' | 'catch_up' | 'queued' | 'complete'`
 
 const moduleOverview = [
   {
-    title: 'Planning kernel',
-    summary: 'Plans, phases, snapshots, and recommendation roles turn progress into a next-track decision without dragging in learner DB or UI concerns.',
-    tags: ['goal', 'deadlines', 'track priority'],
+    title: 'Turn engine',
+    summary: 'The six-phase quiz engine drives routing, staged answers, support, and recovery. Session and debug helpers keep it persistable across consumer shells.',
+    tags: ['workflow/quiz-engine', 'workflow/session', 'workflow/debug'],
   },
   {
-    title: 'Runtime shell contracts',
-    summary: 'Workflow helpers keep session identity, persistence, restore, and deterministic debug routes stable across consumer apps.',
-    tags: ['workflow/session', 'workflow/debug', 'quiz-engine'],
+    title: 'Concept scheduler',
+    summary: 'Concept-level mastery math with independent-gap spacing at 2, 5, and 8 turns. Policy-driven, so consumer apps own eligibility and prerequisite rules.',
+    tags: ['scheduler', 'concept', 'mastery'],
   },
   {
-    title: 'Validation and projection',
-    summary: 'WF harness validators and Neo4j projection contracts let apps prove structure fast, then expose richer learning graphs outside the runtime shell.',
-    tags: ['wf-harness', 'graph/contracts', 'graph/projector'],
+    title: 'Goal evaluator and projection',
+    summary: 'Phase snapshots and local-date deadlines produce a recommendation role — primary, catch-up, queued, or complete — without pulling in learner DB or UI.',
+    tags: ['goal', 'graph/projector', 'graph/contracts'],
   },
 ]
 
@@ -30,11 +41,12 @@ export default function HomePage() {
       <section className="hero">
         <article className="hero-panel">
           <div>
-            <p className="eyebrow">Shared core for concept-first review games</p>
-            <h1>Docs-grade primitives for adaptive learning products.</h1>
+            <p className="eyebrow">The engine behind concept-first review games</p>
+            <h1>Route the learner. Stage the proof. Schedule the return.</h1>
             <p>
-              `review-game-core` holds the shared contracts behind scheduling, staged workflow, planning,
-              WF validation, and graph projection across the review-game repos.
+              `review-game-core` runs the learning loop. It routes the learner to a concept, stages the
+              answer through recognize–structure–prove, opens support or recovery when they stall, and
+              spaces the concept after three independent passes.
             </p>
           </div>
 
@@ -46,43 +58,50 @@ export default function HomePage() {
 
         <div className="hero-grid">
           <article className="spotlight-panel">
-            <p className="eyebrow">What the core enables</p>
-            <strong>Stats uses it for exam-track planning and mastery-map launching.</strong>
+            <p className="eyebrow">What the engine does</p>
+            <strong>Every turn runs through six phases: routing, question, staged-answer, support, recovery, complete.</strong>
             <p>
-              The stats app adapts concept evidence into an exam recommendation while keeping grade math,
-              learner bootstrap, and launcher copy local.
+              Consumer games render their own UI. The core owns the state machine — deciding when the
+              learner needs more structure, earns support, triggers recovery, or masters the concept.
             </p>
           </article>
 
-          <article className="spotlight-panel">
-            <p className="eyebrow">Why the site exists</p>
-            <strong>One place for the package story, feature examples, and canonical docs.</strong>
-            <p>
-              This site keeps the public package framing, consumer examples, and internal migration notes in
-              one Vercel-ready project attached directly to the core repo.
-            </p>
+          <article className="hero-code">
+            <p className="eyebrow">What the core does</p>
+            <pre><code>{heroSnippet}</code></pre>
           </article>
         </div>
       </section>
 
       <section>
-        <div className="strip-panel">
+        <div className="strip-panel strip-panel-dark">
           <p className="eyebrow">How the pieces fit together</p>
-          <div className="module-grid">
-            {moduleOverview.map((module) => (
-              <article key={module.title}>
-                <h3>{module.title}</h3>
-                <p>{module.summary}</p>
-                <div className="module-tags">
-                  {module.tags.map((tag) => (
-                    <span key={tag} className="module-pill">{tag}</span>
-                  ))}
-                </div>
-              </article>
-            ))}
+          <div className="strip-panel-dark-body">
+            <div className="module-grid">
+              {moduleOverview.map((module) => (
+                <article key={module.title}>
+                  <h3>{module.title}</h3>
+                  <p>{module.summary}</p>
+                  <div className="module-tags">
+                    {module.tags.map((tag) => (
+                      <span key={tag} className="module-pill">{tag}</span>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+            <img
+              src="/placeholders/architecture.svg"
+              alt="The turn engine drives routing, staged answers, support, and recovery; the concept scheduler spaces concepts after three independent passes; the goal evaluator and projection surface recommendation roles."
+              className="architecture-diagram"
+              width={420}
+              height={240}
+            />
           </div>
         </div>
       </section>
+
+      <ConsumerStrip />
 
       <section>
         <div className="strip-panel">
@@ -115,7 +134,7 @@ export default function HomePage() {
           <div className="link-row">
             <div>
               <p className="eyebrow">Feature showcase</p>
-              <h2>Every major module gets an example page.</h2>
+              <h2>Every module has a live example.</h2>
             </div>
             <Link href="/showcase/features" className="secondary-link">See all features</Link>
           </div>

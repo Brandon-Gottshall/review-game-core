@@ -15,6 +15,8 @@ The scheduler is concept-level, not question-level. It answers:
 - whether it is in recovery or retention territory
 - which concept should appear next
 
+By default, a concept masters after three independent passes and spaces at gaps of 2, 5, and 8 turns. A supported pass shortens the next gap; a failed attempt triggers recovery.
+
 ## Why the scheduler stays generic
 
 Consumer apps still own:
@@ -24,7 +26,7 @@ Consumer apps still own:
 - UI wording
 - special mastery bars
 
-That is why the scheduler remains policy-first instead of trying to absorb every product's workflow semantics.
+The scheduler stays policy-first so each product owns its own workflow semantics.
 
 ## Typical flow
 

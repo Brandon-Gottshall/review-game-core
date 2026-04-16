@@ -57,6 +57,10 @@
       "types": "./dist/workflow/rendering.d.ts",
       "default": "./dist/workflow/rendering.js"
     },
+    "./wf-harness/validators": {
+      "types": "./dist/wf-harness/validators.d.ts",
+      "default": "./dist/wf-harness/validators.js"
+    },
     "./wf-harness/vitest": {
       "types": "./dist/wf-harness/vitest.d.ts",
       "default": "./dist/wf-harness/vitest.js"

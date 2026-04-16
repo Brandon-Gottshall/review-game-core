@@ -5,15 +5,11 @@ section: Overview
 order: 2
 ---
 
-The deployed site does **not** read live source files from `stats-exam-prep-game` or `math-1111-review-game` at build time.
-
-Instead, it uses **mirrored consumer snippets** committed inside `review-game-core/site/content/consumer-snippets.generated.ts`.
+The deployed site reads **mirrored consumer snippets** committed inside `review-game-core/site/content/consumer-snippets.generated.ts`, never live sibling-repo files.
 
 ## Why this exists
 
-The Vercel project is attached to the `Brandon-Gottshall/review-game-core` repository only.
-
-That means the deployed build must be self-contained inside this repo. If the site tried to read sibling repos directly, preview and production builds would fail or depend on local-only filesystem layout.
+The Vercel project is attached to `review-game-core` only, so the deployed build must be self-contained inside this repo. Reading sibling repos at build time would fail in preview and production.
 
 ## What is mirrored
 
@@ -45,7 +41,7 @@ This keeps the deployed site stable while still making the source provenance exp
 
 ## Deployment note
 
-The mirroring script is a maintainer convenience only. Vercel does **not** run it during preview or production builds.
+The mirroring script is a maintainer convenience. Vercel builds skip it; it runs only in the maintainer's workspace.
 
 The deployed site reads only:
 

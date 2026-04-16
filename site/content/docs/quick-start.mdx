@@ -20,9 +20,11 @@ If you are starting a new consumer repo, keep the integration narrow at first:
 ```ts
 import type { ConceptNode, Question } from '@brandon-gottshall/review-game-core'
 
-type QuizType = 'recognize' | 'setup' | 'prove'
+// `Question.type` is the renderer discriminator — each game defines its own union.
+// Learning stages are tracked by the quiz engine's `QuizEnginePhase`, not by this field.
+type CourseQuestionType = 'multiple_choice' | 'numeric' | 'code_trace'
 
-export type CourseQuestion = Question<QuizType>
+export type CourseQuestion = Question<CourseQuestionType>
 export type CourseConcept = ConceptNode
 ```
 

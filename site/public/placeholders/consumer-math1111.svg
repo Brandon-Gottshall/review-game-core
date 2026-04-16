@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="mathGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#bd4d12" />
+      <stop offset="100%" stop-color="#f28d3f" />
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="24" fill="url(#mathGrad)" />
+  <!-- Parabola / function curve glyph -->
+  <g fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round">
+    <!-- axes -->
+    <path d="M28 90 L92 90" opacity="0.5" />
+    <path d="M60 50 L60 98" opacity="0.5" />
+    <!-- curve -->
+    <path d="M30 88 Q60 40 90 88" stroke-width="3.5" />
+    <!-- dot -->
+    <circle cx="60" cy="55" r="3.5" fill="#ffffff" stroke="none" />
+  </g>
+  <!-- Monogram M1 corner -->
+  <text x="60" y="36" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">M1</text>
+</svg>
