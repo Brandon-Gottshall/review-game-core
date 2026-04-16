@@ -15,6 +15,8 @@ The best default interpretation is:
 
 > concept-first learning, with review and cram as modes built on top
 
+That framing extends to the planning layer as well. The core does not treat planning as a learner platform or a UI affordance; it treats it as a derived abstraction family that converts normalized progress snapshots into recommendation state.
+
 That means a question flow should usually behave like this:
 
 1. `Recognize`
@@ -31,6 +33,7 @@ This package already fits that shape well:
 - concept trees define what is being learned
 - schedulers decide when support/retry/review should occur
 - workflow helpers support staged checkpoints, persistence, recovery, and deterministic browser validation
+- planning helpers define which track or phase should be primary, catch-up, queued, or complete
 
 ## Naming guidance for consumer apps
 
@@ -64,3 +67,5 @@ It does define the stronger general pattern for the shared core:
 
 - the package supports adaptive, staged, concept-first learning
 - "review game" is the implementation lineage, not the only valid product framing
+- the planning/goal family is a shared abstraction boundary, not a consumer-specific dashboard
+- scheduler, workflow, and graph stay adjacent to planning, not absorbed by it

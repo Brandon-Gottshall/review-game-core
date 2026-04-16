@@ -1,0 +1,54 @@
+---
+title: Quick Start
+description: Minimal imports for questions, concepts, generators, scheduling, and workflow contracts.
+section: Getting Started
+order: 0
+apiSurface: root package exports
+relatedFeatures:
+  - question-generator-primitives
+  - scheduler
+---
+
+If you are starting a new consumer repo, keep the integration narrow at first:
+
+1. define your `Question` and `ConceptNode` shapes
+2. add a scheduler policy
+3. wire a small workflow shell around session and debug helpers
+
+## Minimal content types
+
+```ts
+import type { ConceptNode, Question } from '@brandon-gottshall/review-game-core'
+
+type QuizType = 'recognize' | 'setup' | 'prove'
+
+export type CourseQuestion = Question<QuizType>
+export type CourseConcept = ConceptNode
+```
+
+## Minimal scheduler path
+
+```ts
+import {
+  applyConceptOutcome,
+  buildInitialConceptSchedule,
+  createSchedulerPolicy,
+  pickNextConceptId,
+} from '@brandon-gottshall/review-game-core'
+```
+
+## Minimal workflow path
+
+```ts
+import {
+  buildSessionStorageKey,
+  createSessionIdentity,
+  createSessionSnapshot,
+} from '@brandon-gottshall/review-game-core'
+```
+
+From there, branch into the docs that match your needs:
+
+- [Scheduler](/docs/scheduler)
+- [Workflow Core](/docs/workflow-core)
+- [Planning / Goal Family](/docs/planning-goals)

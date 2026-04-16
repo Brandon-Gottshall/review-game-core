@@ -1,0 +1,54 @@
+---
+title: Consumer Example Mirroring
+description: How the site keeps real stats and Math1111 examples without requiring Vercel to read outside the core repo.
+section: Overview
+order: 2
+---
+
+The deployed site does **not** read live source files from `stats-exam-prep-game` or `math-1111-review-game` at build time.
+
+Instead, it uses **mirrored consumer snippets** committed inside `review-game-core/site/content/consumer-snippets.generated.ts`.
+
+## Why this exists
+
+The Vercel project is attached to the `Brandon-Gottshall/review-game-core` repository only.
+
+That means the deployed build must be self-contained inside this repo. If the site tried to read sibling repos directly, preview and production builds would fail or depend on local-only filesystem layout.
+
+## What is mirrored
+
+Each mirrored record includes:
+
+- consumer repo name
+- original source path
+- source revision
+- excerpt title
+- excerpt summary
+- excerpt body
+
+The site uses those committed records for:
+
+- feature-page consumer examples
+- showcase references to stats and Math1111 source
+
+## How freshness is maintained
+
+Refresh the mirrored records from the workspace root with:
+
+```bash
+npm run site:sync-consumer-examples
+```
+
+That script reads the sibling repos locally, extracts the curated excerpt set, and rewrites the committed mirror file.
+
+This keeps the deployed site stable while still making the source provenance explicit.
+
+## Deployment note
+
+The mirroring script is a maintainer convenience only. Vercel does **not** run it during preview or production builds.
+
+The deployed site reads only:
+
+- repo-local MDX docs
+- repo-local core source snippets
+- the committed mirrored snippet file

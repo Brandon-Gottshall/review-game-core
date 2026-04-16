@@ -2,11 +2,40 @@
   "name": "@brandon-gottshall/review-game-core",
   "version": "0.2.2",
   "description": "Shared primitives for concept-tree review games: types, mastery math, scheduling, seeded generators, and a framework-agnostic well-formedness harness.",
+  "private": false,
+  "packageManager": "npm@11.11.0",
+  "workspaces": [
+    "site"
+  ],
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./goal": {
+      "types": "./dist/goal/index.d.ts",
+      "default": "./dist/goal/index.js"
+    },
+    "./graph/client": {
+      "types": "./dist/graph/client.d.ts",
+      "default": "./dist/graph/client.js"
+    },
+    "./graph/contracts": {
+      "types": "./dist/graph/contracts/index.d.ts",
+      "default": "./dist/graph/contracts/index.js"
+    },
+    "./graph/projector": {
+      "types": "./dist/graph/projector/index.d.ts",
+      "default": "./dist/graph/projector/index.js"
+    },
+    "./graph/query": {
+      "types": "./dist/graph/query.d.ts",
+      "default": "./dist/graph/query.js"
+    },
+    "./graph/repositories": {
+      "types": "./dist/graph/repositories/index.d.ts",
+      "default": "./dist/graph/repositories/index.js"
     },
     "./workflow/session": {
       "types": "./dist/workflow/session.d.ts",
@@ -46,9 +75,21 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "graph:neo4j:up": "docker compose -f docker-compose.neo4j.yml up -d neo4j",
+    "graph:neo4j:down": "docker compose -f docker-compose.neo4j.yml down",
+    "graph:smoke": "node scripts/graph-neo4j-smoke.mjs",
     "prepare": "npm run build",
+    "site:sync-consumer-examples": "node scripts/site-sync-consumer-examples.mjs",
+    "site:test": "npm --workspace site run test",
+    "site:typecheck": "npm --workspace site run typecheck",
+    "site:build": "npm --workspace site run build",
+    "site:test:browser": "npm --workspace site run test:browser",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "neo4j-driver": "^5.28.1",
+    "zod": "^4.1.5"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

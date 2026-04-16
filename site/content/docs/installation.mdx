@@ -1,0 +1,59 @@
+---
+title: Installation and Package Structure
+description: Install the package, understand the source-first layout, and see how the site fits into the repo.
+section: Overview
+order: 1
+apiSurface: package exports
+---
+
+Install the package from GitHub:
+
+```json
+{
+  "dependencies": {
+    "@brandon-gottshall/review-game-core": "github:Brandon-Gottshall/review-game-core#v0.2.2"
+  }
+}
+```
+
+Inside this repository, the `site/` app depends on the root package through a repo-local path dependency. That is still deployment-safe because the official Vercel path is a Git-connected build from the full `review-game-core` checkout, not a subdirectory-only CLI upload.
+
+```json
+{
+  "workspaces": ["site"],
+  "dependencies": {
+    "@brandon-gottshall/review-game-core": "file:.."
+  }
+}
+```
+
+## Repo layout
+
+- `src/` contains the source contracts and helpers
+- `dist/` contains the built library output
+- `docs/` contains in-repo package notes and migration plans
+- `site/` contains this Next.js showcase and docs app
+
+## Deployment boundary
+
+The official deployment path for the docs site is:
+
+1. push a branch to GitHub
+2. let Vercel build the `site/` root directory from the `review-game-core` repo
+3. merge to the production branch for the production deployment
+
+Local `vercel deploy` from inside `site/` is not the supported path because it uploads only the subdirectory and breaks repo-root package resolution.
+
+## Important boundary
+
+The package is source-first and pure logic. Consumer repos own:
+
+- UI
+- routing
+- learner identity and storage policy
+- course policy
+- content inventories
+
+The package owns the reusable contracts that sit under those decisions.
+
+Continue with [Quick Start](/docs/quick-start) for a minimal import path.

@@ -1,0 +1,36 @@
+---
+title: Scheduler
+description: Policy-driven concept scheduling for support, failure, spacing, and next-concept selection.
+section: Runtime
+order: 0
+apiSurface: scheduler exports
+relatedFeatures:
+  - scheduler
+---
+
+The scheduler is concept-level, not question-level. It answers:
+
+- how many clean passes a concept has
+- when the concept becomes eligible again
+- whether it is in recovery or retention territory
+- which concept should appear next
+
+## Why the scheduler stays generic
+
+Consumer apps still own:
+
+- prerequisite gating
+- section or exam rollups
+- UI wording
+- special mastery bars
+
+That is why the scheduler remains policy-first instead of trying to absorb every product's workflow semantics.
+
+## Typical flow
+
+1. Build an initial schedule from concept IDs.
+2. Apply outcomes as the learner answers.
+3. Ask for the next eligible concept.
+4. Aggregate the result into app-local dashboards or planning snapshots.
+
+The [scheduler feature page](/showcase/features/scheduler) shows a minimal before/after state transition.

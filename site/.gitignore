@@ -1,0 +1,6 @@
+.vercel
+.next/
+test-results/
+playwright-report/
+.playwright-cli/
+tsconfig.tsbuildinfo

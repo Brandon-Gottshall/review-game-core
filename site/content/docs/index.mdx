@@ -1,0 +1,49 @@
+---
+title: Introduction
+description: Start here for the package framing, site structure, and the three public surfaces of the docs site.
+section: Overview
+order: 0
+relatedFeatures:
+  - planning-goals
+  - scheduler
+---
+
+`review-game-core` is the shared package behind the review-game repos in this workspace. It is not a UI kit and it is not a learner platform. It is a collection of pure TypeScript contracts and helpers for:
+
+- concept-first question flows
+- policy-driven concept scheduling
+- ordered planning and goal evaluation
+- workflow session and debug contracts
+- WF well-formedness validation
+- graph projection for authored learning structure
+
+The site is intentionally split into three surfaces:
+
+- `/` for the package showcase and consumer examples
+- `/showcase/features` for feature-by-feature examples
+- `/docs` for the canonical documentation base
+
+## What the package is for
+
+The package grew out of "review game" repos, but the stronger framing is **concept-first learning with review and cram as modes**.
+
+That means consumer apps usually:
+
+1. identify the governing idea first
+2. check structure or setup second
+3. ask for independent proof later
+4. revisit the concept with spaced retention or repair
+
+## How to read the site
+
+- Use [Quick Start](/docs/quick-start) if you want a minimal integration path.
+- Use [Planning / Goal Family](/docs/planning-goals) if you need launcher or recommendation logic.
+- Use [Feature Showcase](/showcase/features) when you want a concrete example before reading deeper docs.
+- Use [Consumer Example Mirroring](/docs/consumer-example-mirroring) if you need the deployment boundary for stats and Math1111 examples.
+
+## Consumer repos represented here
+
+- `stats-exam-prep-game`
+- `math-1111-review-game`
+
+Those repos provide the real usage patterns shown throughout the site. The examples are sourced from their actual adapters and launchers rather than invented demo code.
