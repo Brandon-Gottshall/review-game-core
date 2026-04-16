@@ -1,0 +1,33 @@
+---
+title: Graph Subsystem
+description: Projection-first graph contracts, query helpers, and Neo4j read-model boundaries.
+section: Graph
+order: 0
+apiSurface: graph/contracts, graph/query, graph/projector
+relatedFeatures:
+  - graph-subsystem
+---
+
+The graph subsystem exists for **rebuildable read models**, not for operational learner state.
+
+It defines:
+
+- projection contracts for games, units, sections, objectives, concepts, ladders, and question artifacts
+- typed query helpers
+- a projector interface for applying envelopes into Neo4j
+
+## Boundary
+
+Keep these in the graph:
+
+- authored learning structure
+- canonical concept relationships
+- question artifact metadata
+
+Keep these out of the graph:
+
+- active learner progress
+- browser session state
+- runtime event streams as a source of truth
+
+The [graph feature page](/showcase/features/graph-subsystem) shows the projection shape used by the package.

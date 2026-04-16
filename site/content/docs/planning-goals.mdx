@@ -1,0 +1,53 @@
+---
+title: Planning / Goal Family
+description: The canonical planning abstraction family for turning progress counts into recommendation state.
+section: Planning
+order: 0
+apiSurface: goal exports
+relatedFeatures:
+  - planning-goals
+---
+
+The planning layer is a **pure evaluation boundary** beside scheduler, workflow, and graph helpers.
+
+It owns:
+
+- ordered plans and phases
+- count-based phase snapshots
+- local-date deadline evaluation
+- derived recommendation state such as `primary`, `catch_up`, `queued`, and `complete`
+
+It does **not** own:
+
+- learner profiles
+- grade math
+- launcher copy
+- routing URLs
+- source provenance
+
+## Core vocabulary
+
+- `GoalPlan`
+- `GoalPhaseDefinition`
+- `GoalPhaseSnapshot`
+- `GoalPhaseState`
+- `GoalPlanEvaluation`
+
+## Why it exists
+
+Consumer apps like `stats-exam-prep-game` and `math-1111-review-game` both need recommendation logic, but they measure progress differently:
+
+- stats tracks concepts and exam coverage
+- Math1111 tracks section completion and unit focus windows
+
+The planning family lets both apps feed progress counts into the same evaluator without forcing the core to understand either product's learner policy.
+
+## Canonical semantics
+
+- progress is count-based
+- local dates are day-granular
+- deadline behavior is explicit
+- missing snapshots default to zero progress
+- unknown snapshots are ignored
+
+See the [planning feature page](/showcase/features/planning-goals) for a worked example and real adapter excerpt.

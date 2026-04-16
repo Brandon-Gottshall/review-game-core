@@ -1,155 +1,66 @@
 # @brandon-gottshall/review-game-core
 
-Shared primitives for concept-tree review games. Pure logic and types — zero runtime dependencies, no UI, no framework lock-in.
+Shared primitives for concept-first review games. Pure logic and types, no UI, and no framework lock-in.
+
+## Public docs and showcase
+
+The repo now includes a dedicated Next.js site in [`site/`](./site) for:
+
+- a package showcase with real consumer examples
+- a feature gallery with worked examples and source excerpts
+- the canonical public docs base
+
+The Vercel project for the site is `review-game-core-site`, attached to the `Brandon-Gottshall/review-game-core` repository and intended to build from the `site/` directory.
+
+## Package surface
+
+`review-game-core` currently includes:
+
+- question and concept primitives
+- seeded generators
+- concept scheduling
+- planning / goal evaluation
+- workflow session, persistence, debug, and quiz-engine helpers
+- WF harness validators
+- graph contracts, query helpers, and projector interfaces
 
 ## Product framing
 
-These repos may present as "review games," but the stronger product pattern is often concept-first learning with proof-oriented assessment layered on top.
+Consumer apps do not need to present themselves as review-only tools. The stronger default framing is:
 
-In that model:
+> concept-first learning, with review and cram as modes built on top
 
-- the learner identifies the governing idea before heavy computation
-- the system checks setup/structure before demanding a full solution
-- independent computation acts as proof of mastery, not the first contact with the concept
-- support can fade as mastery appears and return when the learner slips
-
-That framing matters for both content design and UI language. "Review" remains a valid mode, especially for cram or compression workflows, but consumer apps should not assume every primary path is review-only.
-
-See [docs/product-framing.md](./docs/product-framing.md) for the shared position.
-
-## What's inside (v0.2)
-
-- **Question types** — generic `Question<TType>` + open `InteractiveData` bag
-- **Concept tree** — `ConceptNode`, mastery math, prerequisite unlock logic
-- **Scheduler** — policy-driven concept scheduling, retention, recovery, and next-concept selection
-- **Generators** — `mulberry32` seeded PRNG + `Generator<Q>` interface
-- **Workflow core** — session snapshots, persistence contracts, debug-route normalization, quiz-engine state helpers, and renderer registries
-- **WF harness** — framework-agnostic validators for 7 well-formedness groups, with `vitest` and `jest` adapters
+See [`docs/product-framing.md`](./docs/product-framing.md) for the package position.
 
 ## Install
 
-```jsonc
-// package.json
+```json
 {
   "dependencies": {
-    "@brandon-gottshall/review-game-core": "github:Brandon-Gottshall/review-game-core#v0.2.0"
+    "@brandon-gottshall/review-game-core": "github:Brandon-Gottshall/review-game-core#v0.2.2"
   }
 }
 ```
 
-Source-only package — consumer transpiles. No build step, no dist.
+## Key docs in-repo
 
-## Usage — types
+- [`docs/product-framing.md`](./docs/product-framing.md)
+- [`docs/graph-neo4j.md`](./docs/graph-neo4j.md)
+- [`docs/plans/2026-04-16-goal-abstraction-spec.md`](./docs/plans/2026-04-16-goal-abstraction-spec.md)
 
-```ts
-import type { Question, ConceptNode } from '@brandon-gottshall/review-game-core';
+## Commands
 
-type MyGameType = 'vocab' | 'trace' | 'predict';
-interface MyInteractive { traceData?: { /* ... */ }; }
-
-export type MyQuestion = Question<MyGameType> & { interactive?: MyInteractive };
+```bash
+npm test
+npm run build
+npm run graph:neo4j:up
+npm run graph:smoke
+npm run graph:neo4j:down
 ```
-
-## Usage — scheduler
-
-```ts
-import {
-  applyConceptOutcome,
-  buildInitialConceptSchedule,
-  createSchedulerPolicy,
-  pickNextConceptId,
-} from '@brandon-gottshall/review-game-core';
-
-const policy = createSchedulerPolicy({
-  masteryTarget: 3,
-  subskillIds: ['recognition', 'structure'] as const,
-});
-
-let schedule = buildInitialConceptSchedule(['loops', 'arrays'], policy);
-schedule = applyConceptOutcome(schedule, 'loops', 'independent_correct', 1, { policy });
-
-const nextConceptId = pickNextConceptId(schedule, 4, { policy });
-```
-
-The scheduler is deliberately policy-only. Consumers supply any prerequisite gating through `pickNextConceptId({ isEligible })` and own their own UI/status text.
-
-## Usage — workflow core
-
-The `workflow/*` subpaths are pure TS helpers for the consumer app shell and debug contracts. They keep the shared boundary explicit:
-
-- `workflow/session` for storage keys, snapshot normalization, and reset/restore helpers
-- `workflow/persistence` for adapter contracts and in-memory test doubles
-- `workflow/debug` for the `wf=1` deterministic browser-forcing query contract
-- `workflow/quiz-engine` for routing, staged-answer, support/recovery, and completion transitions
-- `workflow/rendering` for renderer registries and coverage helpers
-
-The browser WF harness lives in consumer repos. This package defines the debug/query and state contracts those browser checks exercise, but not the browser harness itself.
-
-## Usage — WF harness (vitest)
-
-```ts
-import { createWFHarness } from '@brandon-gottshall/review-game-core/wf-harness/vitest';
-import { questionPool } from './data';
-import { conceptTree } from './concepts';
-import { generators } from './generators';
-
-createWFHarness({
-  registeredTypes: ['vocab', 'trace', 'predict'],
-  renderInteractiveCases: ['trace', 'predict'],
-  interactivePayloadMap: {
-    trace:   { payloadKey: 'traceData',   requiredKeys: ['steps'] },
-    predict: { payloadKey: 'predictData', requiredKeys: ['expected'] },
-    vocab: null,
-  },
-  questionPool,
-  conceptTree,
-  generators,
-  quizClientPath: 'app/quiz/quiz-client.tsx',
-  scheduler: {
-    policy: {
-      masteryTarget: 3,
-      independentGaps: [2, 5, 8],
-      supportedGap: 1,
-      failureGap: 1,
-      subskillIds: ['recognition', 'structure'],
-    },
-    transitionScenarios: [
-      {
-        name: 'first clean pass spaces the concept',
-        steps: [
-          { kind: 'outcome', conceptId: 'basics', currentTurn: 1, outcome: 'independent_correct' },
-        ],
-        expectations: [
-          { conceptId: 'basics', path: 'independentPassCount', expected: 1 },
-          { conceptId: 'basics', path: 'nextEligibleTurn', expected: 4 },
-        ],
-      },
-    ],
-  },
-}).all();
-```
-
-## Usage — WF harness (jest)
-
-Identical API; import from `/wf-harness/jest` instead.
 
 ## Stability
 
-v0.x is unstable. Each new game onboarded to the package may trigger breaking minor bumps. Pin by tag.
-
-## WF contract
-
-The core WF harness validates 7 groups:
-
-1. Question type coverage
-2. Render dispatch coverage
-3. Interactive payload shape
-4. Boundary check
-5. Concept consistency
-6. Generator determinism
-7. Scheduler coverage
-
-Groups 2, 3, and 7 can be skipped when their optional config is omitted. This is a static contract check only. Browser-attached workflow validation belongs in each consumer repo and should exercise deterministic debug routes built on `workflow/debug`.
+`v0.x` is unstable. Pin consumers by tag.
 
 ## License
 

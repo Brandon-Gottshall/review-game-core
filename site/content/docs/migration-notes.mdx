@@ -1,0 +1,38 @@
+---
+title: Migration Notes from the Vendored Stats Goal Precursor
+description: How the root-core planning family replaced the old vendored goal kernel as the semantic source of truth.
+section: Planning
+order: 1
+apiSurface: goal migration
+relatedFeatures:
+  - planning-goals
+---
+
+The planning family now lives in the root `review-game-core` package.
+
+Before that migration, the strongest precursor lived in the vendored stats copy. The migration kept the useful semantics and normalized the vocabulary.
+
+## What moved into root core
+
+- `GoalPlan`
+- `GoalPhaseDefinition`
+- `GoalPhaseSnapshot`
+- `GoalPhaseState`
+- `GoalPlanEvaluation`
+- canonical deadline behavior and recommendation roles
+
+## What stayed outside the core
+
+- learner identity
+- grade thresholds
+- exam-pack naming and copy
+- section-specific course policy
+- launcher routing and CTA text
+
+## Consumer shape after migration
+
+- `stats-exam-prep-game` builds phase snapshots from concept progress
+- `math-1111-review-game` builds phase snapshots from section progress
+- both apps keep their own UI and recommendation framing
+
+Use the [planning docs](/docs/planning-goals) and the [planning feature page](/showcase/features/planning-goals) together when migrating a new consumer.

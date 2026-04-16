@@ -1,0 +1,1 @@
+{"version":3,"file":"mock-client.d.ts","sourceRoot":"","sources":["../../../src/graph/testing/mock-client.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EACV,WAAW,EACX,oBAAoB,EAGrB,MAAM,cAAc,CAAA;AAErB,KAAK,QAAQ,GAAG,CAAC,MAAM,EAAE,MAAM,EAAE,MAAM,EAAE,MAAM,CAAC,MAAM,EAAE,OAAO,CAAC,KAAK,OAAO,CAAC,oBAAoB,CAAC,CAAA;AAElG,eAAO,MAAM,qBAAqB,GAAI,UAAU,QAAQ,KAAG,WAe1D,CAAA"}

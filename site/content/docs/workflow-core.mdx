@@ -1,0 +1,38 @@
+---
+title: Workflow Core
+description: Session identity, persistence, deterministic debug routes, and lightweight quiz-engine helpers.
+section: Runtime
+order: 1
+apiSurface: workflow/session, workflow/debug, workflow/quiz-engine
+relatedFeatures:
+  - workflow-core
+---
+
+The workflow layer exists so consumer repos do not have to reinvent session and debug contracts for every game.
+
+## Session helpers
+
+Use `workflow/session` for:
+
+- normalized learner IDs
+- session identity records
+- storage-key construction
+- snapshot normalization and reset helpers
+
+## Debug helpers
+
+Use `workflow/debug` for deterministic query contracts such as `wf=1`, seeded routes, fixed concepts, restore flags, and support forcing.
+
+Those helpers are important because repo-owned browser harnesses depend on stable debug semantics, even though they are not proof of WF completeness on their own.
+
+## Quiz engine helpers
+
+Use `workflow/quiz-engine` when you want a tiny reducer-friendly state contract for:
+
+- routing
+- staged answers
+- support
+- recovery
+- completion
+
+See the [workflow feature page](/showcase/features/workflow-core) for a snapshot and debug-route example.
