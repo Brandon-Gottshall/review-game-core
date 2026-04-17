@@ -3,11 +3,11 @@ import { expect, test } from '@playwright/test'
 test('home page exposes docs and feature entry points', async ({ page }) => {
   await page.goto('/')
 
-  await expect(page.getByRole('heading', { name: /route the learner/i })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /build review games without rewriting routing, retries, and spaced review/i })).toBeVisible()
   await expect(page.getByRole('link', { name: /read the docs/i })).toBeVisible()
-  await expect(page.getByRole('link', { name: /browse the feature gallery/i })).toBeVisible()
-  await expect(page.getByText(/six phases: routing, question, staged-answer, support, recovery, complete/i)).toBeVisible()
-  await expect(page.getByText(/three independent passes/i)).toBeVisible()
+  await expect(page.getByRole('link', { name: /see real examples/i })).toBeVisible()
+  await expect(page.getByText(/decision layer behind the course apps in this workspace/i)).toBeVisible()
+  await expect(page.getByText(/six named states: route, question, staged answer, support, recovery, complete/i)).toBeVisible()
 })
 
 test('feature gallery lists the planned v1 features', async ({ page }) => {

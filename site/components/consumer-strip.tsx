@@ -4,7 +4,7 @@ export function ConsumerStrip() {
   return (
     <section aria-label="Consumer applications">
       <div className="consumer-strip">
-        <p className="eyebrow">Built by</p>
+        <p className="eyebrow">Used in these apps</p>
         <div className="consumer-strip-row">
           {consumers.map((consumer) => (
             <a

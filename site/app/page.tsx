@@ -10,23 +10,23 @@ const evaluation = evaluateGoalPlan(plan, snapshots, {
 })
 
 const nextTrack = evaluation.trackPriority[0]
-// evaluation.activePhase.recommendationRole
-//   → 'primary' | 'catch_up' | 'queued' | 'complete'`
+// Use this to decide which launcher card or study track
+// the learner should see first today.`
 
 const moduleOverview = [
   {
     title: 'Turn engine',
-    summary: 'The six-phase quiz engine drives routing, staged answers, support, and recovery. Session and debug helpers keep it persistable across consumer shells.',
+    summary: 'State machine for a learner turn. It keeps routing, question state, staged answers, support, recovery, persistence, and debug hooks in one place.',
     tags: ['workflow/quiz-engine', 'workflow/session', 'workflow/debug'],
   },
   {
     title: 'Concept scheduler',
-    summary: 'Concept-level mastery math with independent-gap spacing at 2, 5, and 8 turns. Policy-driven, so consumer apps own eligibility and prerequisite rules.',
+    summary: 'Concept mastery and spaced-return logic. It credits independent solves, waits the configured turn gaps, and tells a consumer app what should come back next.',
     tags: ['scheduler', 'concept', 'mastery'],
   },
   {
     title: 'Goal evaluator and projection',
-    summary: 'Phase snapshots and local-date deadlines produce a recommendation role — primary, catch-up, queued, or complete — without pulling in learner DB or UI.',
+    summary: 'Launcher and study-plan logic. It reads dated phase snapshots and returns a next-track recommendation such as primary, catch-up, queued, or complete.',
     tags: ['goal', 'graph/projector', 'graph/contracts'],
   },
 ]
@@ -41,33 +41,34 @@ export default function HomePage() {
       <section className="hero">
         <article className="hero-panel">
           <div>
-            <p className="eyebrow">The engine behind concept-first review games</p>
-            <h1>Route the learner. Stage the proof. Schedule the return.</h1>
+            <p className="eyebrow">Shared TypeScript package for review-game apps</p>
+            <h1>Build review games without rewriting routing, retries, and spaced review.</h1>
             <p>
-              `review-game-core` runs the learning loop. It routes the learner to a concept, stages the
-              answer through recognize–structure–prove, opens support or recovery when they stall, and
-              spaces the concept after three independent passes.
+              `review-game-core` is the decision layer behind the course apps in this workspace. It
+              chooses the next concept, tracks quiz turn state, decides when to open support or
+              recovery, schedules spaced return after independent work, and evaluates which study track
+              a learner should do next.
             </p>
           </div>
 
           <div className="hero-actions">
             <Link href="/docs" className="primary-link">Read the docs</Link>
-            <Link href="/showcase/features" className="secondary-link">Browse the feature gallery</Link>
+            <Link href="/showcase/features" className="secondary-link">See real examples</Link>
           </div>
         </article>
 
         <div className="hero-grid">
           <article className="spotlight-panel">
-            <p className="eyebrow">What the engine does</p>
-            <strong>Every turn runs through six phases: routing, question, staged-answer, support, recovery, complete.</strong>
+            <p className="eyebrow">What one learner turn includes</p>
+            <strong>A learner turn moves through six named states: route, question, staged answer, support, recovery, complete.</strong>
             <p>
-              Consumer games render their own UI. The core owns the state machine — deciding when the
-              learner needs more structure, earns support, triggers recovery, or masters the concept.
+              Consumer apps own the UI, content, and data. The core owns the workflow logic so the
+              product does not drift into ad hoc quiz behavior.
             </p>
           </article>
 
           <article className="hero-code">
-            <p className="eyebrow">What the core does</p>
+            <p className="eyebrow">One real API surface</p>
             <pre><code>{heroSnippet}</code></pre>
           </article>
         </div>
@@ -75,7 +76,7 @@ export default function HomePage() {
 
       <section>
         <div className="strip-panel strip-panel-dark">
-          <p className="eyebrow">How the pieces fit together</p>
+          <p className="eyebrow">Module split</p>
           <div className="strip-panel-dark-body">
             <div className="module-grid">
               {moduleOverview.map((module) => (
@@ -92,7 +93,7 @@ export default function HomePage() {
             </div>
             <img
               src="/placeholders/architecture.svg"
-              alt="The turn engine drives routing, staged answers, support, and recovery; the concept scheduler spaces concepts after three independent passes; the goal evaluator and projection surface recommendation roles."
+              alt="The turn engine handles route, question, staged answer, support, recovery, and complete; the concept scheduler chooses when a concept returns; the goal evaluator tells the launcher which track to surface next."
               className="architecture-diagram"
               width={420}
               height={240}
@@ -107,8 +108,8 @@ export default function HomePage() {
         <div className="strip-panel">
           <div className="link-row">
             <div>
-              <p className="eyebrow">General showcase</p>
-              <h2>Concrete examples from the real consumers</h2>
+              <p className="eyebrow">Real consumers</p>
+              <h2>Open the adapters that already ship.</h2>
             </div>
             <Link href="/showcase" className="secondary-link">Open the showcase</Link>
           </div>
@@ -134,7 +135,7 @@ export default function HomePage() {
           <div className="link-row">
             <div>
               <p className="eyebrow">Feature showcase</p>
-              <h2>Every module has a live example.</h2>
+              <h2>Each core module has a worked example.</h2>
             </div>
             <Link href="/showcase/features" className="secondary-link">See all features</Link>
           </div>
@@ -163,8 +164,8 @@ export default function HomePage() {
         <div className="strip-panel">
           <div className="link-row">
             <div>
-              <p className="eyebrow">Docs base</p>
-              <h2>Canonical package docs, migration notes, and quick-start paths.</h2>
+              <p className="eyebrow">Docs</p>
+              <h2>Installation, API surfaces, and migration notes.</h2>
             </div>
             <Link href="/docs" className="primary-link">Go to docs</Link>
           </div>
