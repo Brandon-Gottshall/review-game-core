@@ -28,12 +28,30 @@ That means a question flow should usually behave like this:
 4. `Retain`
    The system revisits the concept later with lighter support and mixed context.
 
+That ladder is now a first-class shared scheduler policy rather than a consumer-specific convention. See [`guided-repetition-policy.md`](./guided-repetition-policy.md).
+
 This package already fits that shape well:
 
 - concept trees define what is being learned
-- schedulers decide when support/retry/review should occur
+- schedulers decide when support/retry/review should occur, including the shared guided repetition ladder
 - workflow helpers support staged checkpoints, persistence, recovery, and deterministic browser validation
 - planning helpers define which track or phase should be primary, catch-up, queued, or complete
+
+## Planning boundary
+
+Planning and guided repetition are adjacent but different responsibilities.
+
+- Planning answers: which track or goal should be primary right now?
+- Guided repetition answers: once a concept is selected, should the learner recognize it, set it up, prove it independently, or repair it after a hard miss?
+
+The planning layer should not absorb:
+
+- repetition-phase sequencing
+- hard-attempt limits
+- recovery-light routing
+- mastery counting rules for hard independent solves
+
+Those now live in the shared guided scheduler policy.
 
 ## Naming guidance for consumer apps
 
@@ -66,6 +84,7 @@ This document does not redefine every consumer app. Some repos may still be stra
 It does define the stronger general pattern for the shared core:
 
 - the package supports adaptive, staged, concept-first learning
+- the canonical recognize -> structure -> prove -> retain ladder is shared infrastructure, not just a single-game habit
 - "review game" is the implementation lineage, not the only valid product framing
 - the planning/goal family is a shared abstraction boundary, not a consumer-specific dashboard
 - scheduler, workflow, and graph stay adjacent to planning, not absorbed by it
