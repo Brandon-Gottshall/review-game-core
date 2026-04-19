@@ -198,3 +198,6 @@ export function populateConceptQuestions(
   }
   return populated;
 }
+
+export * from './course-units.js'
+export * from './hierarchy.js'

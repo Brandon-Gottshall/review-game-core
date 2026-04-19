@@ -1,0 +1,54 @@
+[
+  {
+    "id": "new-unit",
+    "input": {
+      "unitId": "unit-a",
+      "phase": "not_started",
+      "attempts": [],
+      "lastPracticedAt": null,
+      "dueAt": null
+    },
+    "now": "2026-04-19T12:00:00.000Z",
+    "expected": {
+      "score": 0,
+      "phase": "not_started"
+    }
+  },
+  {
+    "id": "active-practice",
+    "input": {
+      "unitId": "unit-b",
+      "phase": "practicing",
+      "attempts": [
+        { "correct": true, "occurredAt": "2026-04-17T12:00:00.000Z", "cadenceDays": 2 },
+        { "correct": true, "occurredAt": "2026-04-18T12:00:00.000Z", "cadenceDays": 3 },
+        { "correct": false, "occurredAt": "2026-04-19T10:00:00.000Z", "cadenceDays": 1 }
+      ],
+      "lastPracticedAt": "2026-04-19T10:00:00.000Z",
+      "dueAt": "2026-04-24T12:00:00.000Z"
+    },
+    "now": "2026-04-19T12:00:00.000Z",
+    "expected": {
+      "score": 88,
+      "phase": "practicing"
+    }
+  },
+  {
+    "id": "overdue-shaky",
+    "input": {
+      "unitId": "unit-c",
+      "phase": "shaky",
+      "attempts": [
+        { "correct": false, "occurredAt": "2026-03-30T12:00:00.000Z", "cadenceDays": 7 },
+        { "correct": true, "occurredAt": "2026-04-01T12:00:00.000Z", "cadenceDays": 3 }
+      ],
+      "lastPracticedAt": "2026-04-01T12:00:00.000Z",
+      "dueAt": "2026-04-10T12:00:00.000Z"
+    },
+    "now": "2026-04-19T12:00:00.000Z",
+    "expected": {
+      "score": 28,
+      "phase": "shaky"
+    }
+  }
+]
