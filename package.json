@@ -13,6 +13,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./theme.css": "./theme.css",
+    "./ui": {
+      "types": "./dist/ui/index.d.ts",
+      "default": "./dist/ui/index.js"
+    },
     "./goal": {
       "types": "./dist/goal/index.d.ts",
       "default": "./dist/goal/index.js"
@@ -37,6 +42,10 @@
       "types": "./dist/graph/repositories/index.d.ts",
       "default": "./dist/graph/repositories/index.js"
     },
+    "./graph/runtime": {
+      "types": "./dist/graph/runtime.d.ts",
+      "default": "./dist/graph/runtime.js"
+    },
     "./workflow/session": {
       "types": "./dist/workflow/session.d.ts",
       "default": "./dist/workflow/session.js"
@@ -48,6 +57,10 @@
     "./workflow/debug": {
       "types": "./dist/workflow/debug.d.ts",
       "default": "./dist/workflow/debug.js"
+    },
+    "./workflow/interventions": {
+      "types": "./dist/workflow/interventions.d.ts",
+      "default": "./dist/workflow/interventions.js"
     },
     "./workflow/quiz-engine": {
       "types": "./dist/workflow/quiz-engine.d.ts",
@@ -74,6 +87,7 @@
     "src",
     "dist",
     "docs",
+    "theme.css",
     "README.md",
     "tsconfig.build.json"
   ],
@@ -97,8 +111,17 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "jsdom": "^26.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "typescript": "^5.6.0",
     "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "repository": {
     "type": "git",

@@ -191,6 +191,62 @@ describe('goal planner', () => {
     expect(evaluation.phases[1]?.recommendationRole).toBe('primary')
   })
 
+  it('skips across multiple consecutive past-due advance-after-deadline phases', () => {
+    const evaluation = evaluateGoalPlan({
+      id: 'multi-deadline-shift',
+      label: 'Multi deadline shift',
+      phases: [
+        {
+          id: 'phase-1',
+          label: 'Phase 1',
+          trackId: 'exam3',
+          deadlineLocalDate: '2026-04-15',
+          deadlineBehavior: 'advance_after_deadline',
+        },
+        {
+          id: 'phase-2',
+          label: 'Phase 2',
+          trackId: 'exam2',
+          deadlineLocalDate: '2026-04-17',
+          deadlineBehavior: 'advance_after_deadline',
+        },
+        {
+          id: 'phase-3',
+          label: 'Phase 3',
+          trackId: 'final',
+        },
+      ],
+    }, [
+      {
+        phaseId: 'phase-1',
+        trackId: 'exam3',
+        completedUnits: 2,
+        totalUnits: 10,
+      },
+      {
+        phaseId: 'phase-2',
+        trackId: 'exam2',
+        completedUnits: 1,
+        totalUnits: 10,
+      },
+      {
+        phaseId: 'phase-3',
+        trackId: 'final',
+        completedUnits: 0,
+        totalUnits: 10,
+      },
+    ], {
+      localDate: '2026-04-18',
+    })
+
+    expect(evaluation.activePhase?.id).toBe('phase-3')
+    expect(evaluation.phases.map((phase) => phase.recommendationRole)).toEqual([
+      'catch_up',
+      'catch_up',
+      'primary',
+    ])
+  })
+
   it('keeps a past-due phase primary when there is no later incomplete phase', () => {
     const evaluation = evaluateGoalPlan({
       id: 'final-phase',

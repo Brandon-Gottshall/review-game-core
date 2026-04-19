@@ -21,9 +21,11 @@ import {
   createQuizEngineState,
   enterRecoveryState,
   enterSupportState,
+  reduceQuizEngine,
   routeQuizEngine,
   resetQuizEngine,
   selectQuizQuestion,
+  syncQuizEngineQuestionState,
 } from '../src/workflow/quiz-engine.js';
 import {
   buildWorkflowDebugQuery,
@@ -177,6 +179,61 @@ describe('workflow/quiz-engine', () => {
     expect(completed.completedQuestionIds).toEqual(['q-1']);
     expect(reset.phase).toBe('routing');
     expect(reset.complete).toBe(false);
+  });
+
+  it('syncs restored question state and reducer actions without losing counters', () => {
+    const question = {
+      id: 'q-2',
+      concept: 'conditions',
+      type: 'multiple_choice',
+      stageCount: 2,
+    };
+
+    const selected = reduceQuizEngine(
+      createQuizEngineState(),
+      {
+        type: 'select-question',
+        question,
+      },
+      {
+        questions: [question],
+        defaultStageCount: 2,
+      }
+    );
+
+    const staged = reduceQuizEngine(selected, {
+      type: 'sync-question-state',
+      question,
+      stageIndex: 1,
+      stageAnswers: ['A'],
+      outcome: 'answered',
+    });
+    const supported = reduceQuizEngine(staged, { type: 'support' });
+    const restored = syncQuizEngineQuestionState(supported, {
+      question,
+      stageIndex: 1,
+      stageAnswers: ['A'],
+      supportActive: true,
+      outcome: 'supported',
+    });
+    const recovered = reduceQuizEngine(restored, { type: 'recovery' });
+    const completed = reduceQuizEngine(recovered, {
+      type: 'sync-question-state',
+      question,
+      stageIndex: 1,
+      stageAnswers: ['A', 'B'],
+      complete: true,
+      outcome: 'completed',
+    });
+
+    expect(selected.phase).toBe('question');
+    expect(staged.phase).toBe('staged-answer');
+    expect(staged.stageIndex).toBe(1);
+    expect(supported.supportCount).toBe(1);
+    expect(restored.phase).toBe('support');
+    expect(recovered.recoveryCount).toBe(1);
+    expect(completed.phase).toBe('complete');
+    expect(completed.completedQuestionIds).toEqual(['q-2']);
   });
 });
 
