@@ -52,10 +52,13 @@ export const themePreferenceBaseSchema = z.object({
   colorScheme: colorSchemePreferenceSchema,
   updatedAt: z.string().min(1),
 })
+const themePreferenceOverrideSchema = themePreferenceBaseSchema.partial()
 
 export const themePreferenceSchema: z.ZodType<ThemePreference> = themePreferenceBaseSchema.extend({
-  overrides: z.record(gameIdSchema, themePreferenceBaseSchema.partial())
-    .transform((value) => value as Partial<Record<GameId, Partial<ThemePreferenceBase>>>)
+  overrides: z.record(z.string(), themePreferenceOverrideSchema)
+    .transform((value) => Object.fromEntries(
+      Object.entries(value).filter(([key]) => isGameId(key)),
+    ) as Partial<Record<GameId, Partial<ThemePreferenceBase>>>)
     .optional(),
 })
 
@@ -107,6 +110,42 @@ export const resolveAppliedColorScheme = (
   }
 
   return colorScheme
+}
+
+const resolveComparableThemePreference = (
+  preference: ThemePreference | ThemePreferenceBase | null | undefined,
+  gameId?: GameId,
+): ThemePreferenceBase => {
+  if (!preference) return buildDefaultThemePreferenceBase()
+
+  if ('overrides' in preference) {
+    return resolveThemePreference(preference, gameId)
+  }
+
+  return {
+    themeId: preference.themeId ?? DEFAULT_THEME_ID,
+    colorScheme: preference.colorScheme ?? 'system',
+    updatedAt: preference.updatedAt ?? new Date(0).toISOString(),
+  }
+}
+
+const toComparableTimestamp = (value: string): number => {
+  const parsed = Date.parse(value)
+  return Number.isNaN(parsed) ? 0 : parsed
+}
+
+export const shouldApplyThemePreference = (
+  candidate: ThemePreference | ThemePreferenceBase | null | undefined,
+  current: ThemePreference | ThemePreferenceBase | null | undefined,
+  options: {
+    gameId?: GameId
+  } = {},
+): boolean => {
+  const candidateResolved = resolveComparableThemePreference(candidate, options.gameId)
+  const currentResolved = resolveComparableThemePreference(current, options.gameId)
+
+  return toComparableTimestamp(candidateResolved.updatedAt)
+    >= toComparableTimestamp(currentResolved.updatedAt)
 }
 
 export const mergeThemePreference = (

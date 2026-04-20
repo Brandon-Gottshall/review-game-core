@@ -48,12 +48,26 @@ describe('theme preferences', () => {
       themeId: DEFAULT_THEME_ID,
       colorScheme: 'system',
       updatedAt: '2026-04-19T12:00:00.000Z',
+      overrides: {
+        'math-1111-review-game': {
+          themeId: DEFAULT_THEME_ID,
+          colorScheme: 'dark',
+          updatedAt: '2026-04-19T12:05:00.000Z',
+        },
+      },
     })
 
     expect(readStoredThemePreference(target)).toEqual({
       themeId: DEFAULT_THEME_ID,
       colorScheme: 'system',
       updatedAt: '2026-04-19T12:00:00.000Z',
+      overrides: {
+        'math-1111-review-game': {
+          themeId: DEFAULT_THEME_ID,
+          colorScheme: 'dark',
+          updatedAt: '2026-04-19T12:05:00.000Z',
+        },
+      },
     })
   })
 
