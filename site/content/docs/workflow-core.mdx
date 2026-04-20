@@ -3,12 +3,20 @@ title: Workflow Core
 description: Six-phase quiz engine with session, persistence, and deterministic debug contracts.
 section: Runtime
 order: 1
-apiSurface: workflow/session, workflow/debug, workflow/quiz-engine
+apiSurface: workflow/session, workflow/debug, workflow/quiz-engine, workflow/interventions
 relatedFeatures:
   - workflow-core
+  - content-identity-restore
+  - workflow-interventions
 ---
 
 The workflow layer drives one quiz turn. The quiz engine runs it through six phases; session and debug helpers are the contracts the engine leans on so consumer shells can persist, restore, and force routes deterministically.
+
+The canonical repo docs for this layer are:
+
+- [`docs/workflow-session-contract.md`](../../../docs/workflow-session-contract.md)
+- [`docs/workflow-content-invalidation.md`](../../../docs/workflow-content-invalidation.md)
+- [`docs/wf-contract.md`](../../../docs/wf-contract.md)
 
 ## The six-phase quiz engine
 
@@ -31,9 +39,17 @@ The phase names come straight from the `QuizEnginePhase` union in `src/workflow/
 - session identity records
 - storage-key construction
 - snapshot normalization and reset helpers
+- content-identity comparison for restored question state
 
 ## Debug helpers
 
 `workflow/debug` exposes deterministic query contracts — `wf=1`, seeded routes, fixed concepts, restore flags, and support forcing — so repo-owned browser harnesses can reach any phase without clicking through the whole loop.
 
+Those deterministic routes are important, but they are still regression/debug tools. They do not replace a real low-context WF pass against the visible product path.
+
 See the [workflow feature page](/showcase/features/workflow-core) for the snapshot and debug-route example.
+
+## Adjacent showcase pages
+
+- [Content-identity restore seam](/showcase/features/content-identity-restore) shows the shared comparison shape a consumer uses to decide whether a restored turn is still valid.
+- [Per-question experiment gating](/showcase/features/workflow-interventions) walks the cohort-resolution, exposure-record, and served-question metadata that keep gated or LLM-variant questions auditable.

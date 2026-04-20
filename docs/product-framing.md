@@ -1,48 +1,58 @@
 # Product Framing
 
-This package is named `review-game-core`, but consumer apps built on top of it do not need to be framed as review-only products.
+`review-game-core` is the package name and implementation lineage. It should not be read as a rule that every consumer app built on top of it is a review-only product.
 
-In practice, a strong consumer may be doing something more valuable:
-
-- teaching the governing concept first
-- checking the learner's setup and decision path
-- asking for independent proof only after the concept is understood
-- adapting support level as mastery changes
+The stronger default framing is a shared family of concept-learning products that may teach, guide, test, repair, retain, or compress learning with one kernel.
 
 ## Core position
 
 The best default interpretation is:
 
-> concept-first learning, with review and cram as modes built on top
+> a shared concept-learning kernel, with review as one mode built on top
 
-That framing extends to the planning layer as well. The core does not treat planning as a learner platform or a UI affordance; it treats it as a derived abstraction family that converts normalized progress snapshots into recommendation state.
+The canonical family now has distinct adjacent contracts:
 
-That means a question flow should usually behave like this:
+- `graph`
+  Owns authored structure and rebuildable read models.
+- `planning`
+  Turns normalized progress snapshots into recommendation state such as `primary`, `catch_up`, `queued`, and `complete`.
+- `guided repetition`
+  Owns concept-level teaching, support fade, hard-proof mastery, recovery-light routing, and retention timing once a concept is selected.
+- `workflow/session`
+  Owns deterministic turn phases, persistence, restore/reset behavior, and debug seams.
+- `WF`
+  Owns the workflow-completeness doctrine for whether a real user-facing flow is discoverable and finishable without repo context.
+
+That separation is the product framing. The core is shared infrastructure for a family of learner-facing products, not a single review UI with extra helpers attached.
+
+## Canonical learner arc
+
+Once planning selects what should be frontmost, guided repetition owns how the concept is taught and revisited.
+
+The shared ladder is concept-first:
 
 1. `Recognize`
-   The learner identifies the concept, rule, or condition that governs the problem.
 2. `Structure`
-   The learner commits to the setup, transformation, or next move.
-3. `Prove`
-   The learner performs the math, logic, or execution without the earlier scaffolding.
-4. `Retain`
-   The system revisits the concept later with lighter support and mixed context.
+3. `Apply`
+4. `Proof-prep`
+5. `Prove` and later `Retain`
 
-That ladder is now a first-class shared scheduler policy rather than a consumer-specific convention. See [`guided-repetition-policy.md`](./guided-repetition-policy.md).
+Consumer apps may render or label those steps differently, but the policy stays the same:
 
-This package already fits that shape well:
+- teach the governing concept before heavier independent proof
+- fade support as the learner demonstrates more control
+- count hard independent work toward mastery
+- use lighter repair after hard misses
+- revisit mastered concepts later through retention
 
-- concept trees define what is being learned
-- schedulers decide when support/retry/review should occur, including the shared guided repetition ladder
-- workflow helpers support staged checkpoints, persistence, recovery, and deterministic browser validation
-- planning helpers define which track or phase should be primary, catch-up, queued, or complete
+Review and cram still fit this model. They are valid consumer modes or labels built on top of the shared guided ladder, not the only valid reading of the package.
 
 ## Planning boundary
 
 Planning and guided repetition are adjacent but different responsibilities.
 
 - Planning answers: which track or goal should be primary right now?
-- Guided repetition answers: once a concept is selected, should the learner recognize it, set it up, prove it independently, or repair it after a hard miss?
+- Guided repetition answers: once a concept is selected, should the learner recognize it, structure it, apply it, prove it independently, or repair it after a hard miss?
 
 The planning layer should not absorb:
 
@@ -50,8 +60,29 @@ The planning layer should not absorb:
 - hard-attempt limits
 - recovery-light routing
 - mastery counting rules for hard independent solves
+- launcher copy or route decisions
 
-Those now live in the shared guided scheduler policy.
+Those now live in the shared guided scheduler policy or in the consumer shell, not in planning.
+
+## Workflow and WF boundary
+
+The workflow/session layer is the runtime envelope around learner progress through a task.
+
+It standardizes:
+
+- staged turn phases
+- session identity
+- persistence and restore/reset seams
+- deterministic debug routing
+
+That layer is not the same thing as `WF`.
+
+`WF` is the shared doctrine for user-facing completeness:
+
+- deterministic browser harnesses and debug routes count as `Regression`
+- a workflow is only `WF complete` when a low-context browser agent can enter from the real entry path, discover how to proceed, recover when needed, and complete or clearly fail using visible product cues
+
+This distinction matters for product framing because the kernel is not only trying to be correct. It is trying to support products that are actually usable without hidden knowledge.
 
 ## Naming guidance for consumer apps
 
@@ -83,8 +114,9 @@ This document does not redefine every consumer app. Some repos may still be stra
 
 It does define the stronger general pattern for the shared core:
 
-- the package supports adaptive, staged, concept-first learning
-- the canonical recognize -> structure -> prove -> retain ladder is shared infrastructure, not just a single-game habit
-- "review game" is the implementation lineage, not the only valid product framing
-- the planning/goal family is a shared abstraction boundary, not a consumer-specific dashboard
-- scheduler, workflow, and graph stay adjacent to planning, not absorbed by it
+- the package supports a shared family of concept-learning products, not only review flows
+- the guided ladder is shared kernel policy, not a consumer-specific habit
+- the planning family is a pure recommendation boundary, not a learner platform
+- workflow/session is the runtime shell around turns and persistence, not a substitute for WF
+- WF remains the separate proof that a low-context user can actually use the visible product
+- "review game" is lineage, not the only valid consumer framing

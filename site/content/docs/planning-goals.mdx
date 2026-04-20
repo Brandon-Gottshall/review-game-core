@@ -10,6 +10,14 @@ relatedFeatures:
 
 The planning layer is a **pure evaluation boundary** beside scheduler, workflow, and graph helpers.
 
+The canonical repo docs for this layer are:
+
+- [`docs/planning-goal-contract.md`](../../../docs/planning-goal-contract.md)
+- [`docs/goal-launcher-congruency.md`](../../../docs/goal-launcher-congruency.md)
+- [`docs/planning-rollup-boundary.md`](../../../docs/planning-rollup-boundary.md)
+- [`docs/source-provenance-boundary.md`](../../../docs/source-provenance-boundary.md)
+- [`docs/plans/2026-04-16-goal-abstraction-spec.md`](../../../docs/plans/2026-04-16-goal-abstraction-spec.md)
+
 It owns:
 
 - ordered plans and phases
@@ -27,6 +35,12 @@ It does **not** own:
 - routing URLs
 - source provenance
 
+Adjacent planning-shaped boundaries stay documented separately:
+
+- launcher and goal-coach congruency
+- count-rollup normalization from sections/objectives/topics
+- provenance/source honesty above the core evaluator
+
 ## Core vocabulary
 
 - `GoalPlan`
@@ -34,6 +48,8 @@ It does **not** own:
 - `GoalPhaseSnapshot`
 - `GoalPhaseState`
 - `GoalPlanEvaluation`
+
+For shared UI consumers, `@brandon-gottshall/review-game-core/ui` now exposes `GoalRoadmapCard`, which renders ordered `GoalPhaseState[]` output directly from `evaluateGoalPlan(...)` without an app-local adapter layer.
 
 ## Why it exists
 
@@ -51,5 +67,7 @@ The planning family lets both apps feed progress counts into the same evaluator 
 - deadline behavior is explicit
 - missing snapshots default to zero progress
 - unknown snapshots are ignored
+
+The kernel is meant to publish recommendation state, not product copy or launcher policy.
 
 See the [planning feature page](/showcase/features/planning-goals) for a worked example and real adapter excerpt.

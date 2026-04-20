@@ -16,18 +16,28 @@ const nextTrack = evaluation.trackPriority[0]
 const moduleOverview = [
   {
     title: 'Turn engine',
-    summary: 'State machine for a learner turn. It keeps routing, question state, staged answers, support, recovery, persistence, and debug hooks in one place.',
+    summary: 'State machine for a learner turn. It keeps routing, question state, staged answers, support, recovery, persistence, and debug hooks in one place — plus a content-identity seam so a restored turn can be compared against current authored content before it is resumed.',
     tags: ['workflow/quiz-engine', 'workflow/session', 'workflow/debug'],
   },
   {
-    title: 'Concept scheduler',
-    summary: 'Concept mastery and spaced-return logic. It credits independent solves, waits the configured turn gaps, and tells a consumer app what should come back next.',
-    tags: ['scheduler', 'concept', 'mastery'],
+    title: 'Concept scheduler and repetition ladder',
+    summary: 'Concept mastery and spaced-return logic with the guided rep ladder — light, hard, and recovery-light phases — and named selection reasons the launcher can surface without inventing its own vocabulary.',
+    tags: ['scheduler', 'concept', 'mastery', 'guided-repetition'],
   },
   {
     title: 'Goal evaluator and projection',
     summary: 'Launcher and study-plan logic. It reads dated phase snapshots and returns a next-track recommendation such as primary, catch-up, queued, or complete.',
     tags: ['goal', 'graph/projector', 'graph/contracts'],
+  },
+  {
+    title: 'Readiness and phase state',
+    summary: 'A coarse 0–100 readiness signal plus a six-value phase vocabulary that rolls up honestly. Good for routing and launcher copy, intentionally not an assessment instrument.',
+    tags: ['readiness', 'scheduler/phase-state'],
+  },
+  {
+    title: 'Experiment gating and WF harness',
+    summary: 'Deterministic cohort resolution, exposure records, and served-question metadata let experimental or LLM-variant questions ride the same turn engine — with the WF harness gating them before learner exposure.',
+    tags: ['workflow/interventions', 'wf-harness'],
   },
 ]
 
@@ -78,6 +88,13 @@ export default function HomePage() {
         <div className="strip-panel strip-panel-dark">
           <p className="eyebrow">Module split</p>
           <div className="strip-panel-dark-body">
+            <img
+              src="/placeholders/architecture.svg"
+              alt="The turn engine handles route, question, staged answer, support, recovery, and complete; the concept scheduler chooses when a concept returns; the goal evaluator tells the launcher which track to surface next."
+              className="architecture-diagram"
+              width={420}
+              height={240}
+            />
             <div className="module-grid">
               {moduleOverview.map((module) => (
                 <article key={module.title}>
@@ -91,13 +108,6 @@ export default function HomePage() {
                 </article>
               ))}
             </div>
-            <img
-              src="/placeholders/architecture.svg"
-              alt="The turn engine handles route, question, staged answer, support, recovery, and complete; the concept scheduler chooses when a concept returns; the goal evaluator tells the launcher which track to surface next."
-              className="architecture-diagram"
-              width={420}
-              height={240}
-            />
           </div>
         </div>
       </section>

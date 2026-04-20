@@ -6,6 +6,8 @@ order: 0
 apiSurface: scheduler exports
 relatedFeatures:
   - scheduler
+  - guided-repetition
+  - readiness-truthfulness
 ---
 
 The scheduler is concept-level, not question-level. It answers:
@@ -14,6 +16,12 @@ The scheduler is concept-level, not question-level. It answers:
 - when the concept becomes eligible again
 - whether it is in recovery or retention territory
 - which concept should appear next
+
+The canonical repo docs adjacent to this layer are:
+
+- [`docs/guided-repetition-policy.md`](../../../docs/guided-repetition-policy.md)
+- [`docs/question-quality-contract.md`](../../../docs/question-quality-contract.md)
+- [`docs/readiness-truthfulness.md`](../../../docs/readiness-truthfulness.md)
 
 By default, a concept masters after three independent passes and spaces at gaps of 2, 5, and 8 turns. A supported pass shortens the next gap; a failed attempt triggers recovery.
 
@@ -36,3 +44,8 @@ The scheduler stays policy-first so each product owns its own workflow semantics
 4. Aggregate the result into app-local dashboards or planning snapshots.
 
 The [scheduler feature page](/showcase/features/scheduler) shows a minimal before/after state transition.
+
+## Adjacent showcase pages
+
+- [Guided repetition ladder](/showcase/features/guided-repetition) walks the light/hard/recovery-light ladder with attempt budgets and named selection reasons.
+- [Readiness scoring and phase state](/showcase/features/readiness-truthfulness) shows the coarse readiness signal and the six-value phase vocabulary consumers can roll up without overclaiming.

@@ -1,38 +1,92 @@
 ---
-title: Migration Notes from the Vendored Stats Goal Precursor
-description: How the root-core planning family replaced the old vendored goal kernel as the semantic source of truth.
-section: Planning
-order: 1
-apiSurface: goal migration
+title: Migration Notes and Adoption Shape
+description: How to map consumer-local mechanisms onto the current core families without pulling rollout choreography into the package docs.
+section: Overview
+order: 3
+apiSurface: migration guidance
 relatedFeatures:
   - planning-goals
+  - scheduler
+  - workflow-core
 ---
 
-The planning family now lives in the root `review-game-core` package.
+Use this page as the short migration entrypoint.
 
-Before that migration, the strongest precursor lived in the vendored stats copy. The migration kept the useful semantics and unified the vocabulary.
+The canonical boundary map now lives in [`docs/core-mechanism-inventory.md`](../../../docs/core-mechanism-inventory.md).
 
-## What moved into root core
+That inventory is the primary answer to:
 
-- `GoalPlan`
-- `GoalPhaseDefinition`
-- `GoalPhaseSnapshot`
-- `GoalPhaseState`
-- `GoalPlanEvaluation`
-- canonical deadline behavior and recommendation roles
+- what core already owns
+- what a consumer should normalize into those families
+- what should stay consumer-local
 
-## What stayed outside the core
+This page explains the adoption shape around that inventory.
 
-- learner identity
-- grade thresholds
-- exam-pack naming and copy
-- section-specific course policy
-- launcher routing and CTA text
+## The migration pattern
 
-## Consumer shape after migration
+The package is no longer just absorbing one old stats precursor.
 
-- `stats-exam-prep-game` builds phase snapshots from concept progress
-- `math-1111-review-game` builds phase snapshots from section progress
-- both apps keep their own UI and recommendation framing
+The stable pattern is:
 
-Use the [planning docs](/docs/planning-goals) and the [planning feature page](/showcase/features/planning-goals) together when migrating a new consumer.
+1. identify the mechanism you have in a consumer repo
+2. find the matching core family
+3. normalize your app-shaped evidence or state into that family
+4. keep copy, learner policy, and rollout behavior above core
+
+That applies across the current shared families:
+
+- planning consumes normalized progress counts
+- scheduler consumes concept evidence and guided repetition state
+- workflow consumes session/debug/turn state
+- graph consumes authored structure for projection
+- WF doctrine separates deterministic regression from low-context workflow proof
+
+## What counts as a good migration
+
+A migration is in good shape when:
+
+- the shared rule becomes more explicit and deterministic
+- consumer adapters get thinner instead of more magical
+- the core vocabulary gets more stable across games
+- the product-specific meaning still lives in the consumer shell
+
+A migration is in bad shape when it pulls any of these into core:
+
+- launcher copy
+- learner identity policy
+- course grading or exam-window policy
+- repo-specific release sequencing
+- ad hoc UI state that only one app understands
+
+## Planning is still the clearest precursor
+
+The original strong precursor was the vendored `stats` goal kernel.
+
+That planning migration remains the clearest example of the normalization move:
+
+- app-shaped goal logic -> `GoalPlan` and `GoalPhaseSnapshot`
+- implicit recommendation heuristics -> explicit recommendation roles
+- local dashboard semantics -> a pure evaluator beside scheduler, workflow, and graph
+
+Both current example consumers still adapt their own evidence differently:
+
+- `stats-exam-prep-game` rolls concept progress into phase snapshots
+- `math-1111-review-game` rolls section progress into phase snapshots
+
+The shared evaluator stays the same because the normalization seam is count-based.
+
+## Use the deeper docs by family
+
+- Use [Planning / Goal Family](/docs/planning-goals) when migrating recommendation logic.
+- Use [Scheduler](/docs/scheduler) when migrating concept progression or guided repetition.
+- Use [Workflow Core](/docs/workflow-core) when migrating session, persistence, or deterministic debug seams.
+- Use [`docs/core-mechanism-inventory.md`](../../../docs/core-mechanism-inventory.md) when deciding whether something belongs in core at all.
+
+For the planning-adjacent boundary questions that often come up during migration, the canon repo docs are:
+
+- [`docs/goal-launcher-congruency.md`](../../../docs/goal-launcher-congruency.md)
+- [`docs/planning-rollup-boundary.md`](../../../docs/planning-rollup-boundary.md)
+- [`docs/source-provenance-boundary.md`](../../../docs/source-provenance-boundary.md)
+- [`docs/saved-plan-seam-evaluation.md`](../../../docs/saved-plan-seam-evaluation.md)
+
+This page is intentionally about adoption shape, not rollout choreography.

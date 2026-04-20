@@ -42,6 +42,19 @@ The shared scheduler now also exposes a canonical guided repetition policy:
 
 That ladder is intentionally separate from planning. Planning decides which track should be frontmost; guided repetition decides how a chosen concept is taught and revisited.
 
+## Breaking contracts
+
+`src/scheduler/phase-state.ts` defines the canonical learner phase vocabulary used by shared readiness, launcher state, and quiz feedback:
+
+- `not_started`
+- `learning`
+- `practicing`
+- `mastered`
+- `shaky`
+- `tracked_in_quiz`
+
+Treat additions or removals in that union as a breaking change for consumer apps.
+
 ## Install
 
 ```json
@@ -56,6 +69,18 @@ That ladder is intentionally separate from planning. Planning decides which trac
 
 - [`docs/product-framing.md`](./docs/product-framing.md)
 - [`docs/guided-repetition-policy.md`](./docs/guided-repetition-policy.md)
+- [`docs/question-quality-contract.md`](./docs/question-quality-contract.md)
+- [`docs/planning-goal-contract.md`](./docs/planning-goal-contract.md)
+- [`docs/goal-launcher-congruency.md`](./docs/goal-launcher-congruency.md)
+- [`docs/planning-rollup-boundary.md`](./docs/planning-rollup-boundary.md)
+- [`docs/readiness-truthfulness.md`](./docs/readiness-truthfulness.md)
+- [`docs/wf-contract.md`](./docs/wf-contract.md)
+- [`docs/per-question-wf-gating.md`](./docs/per-question-wf-gating.md)
+- [`docs/workflow-session-contract.md`](./docs/workflow-session-contract.md)
+- [`docs/workflow-content-invalidation.md`](./docs/workflow-content-invalidation.md)
+- [`docs/source-provenance-boundary.md`](./docs/source-provenance-boundary.md)
+- [`docs/core-mechanism-inventory.md`](./docs/core-mechanism-inventory.md)
+- [`docs/saved-plan-seam-evaluation.md`](./docs/saved-plan-seam-evaluation.md)
 - [`docs/graph-neo4j.md`](./docs/graph-neo4j.md)
 - [`docs/plans/2026-04-16-goal-abstraction-spec.md`](./docs/plans/2026-04-16-goal-abstraction-spec.md)
 

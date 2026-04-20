@@ -1,14 +1,26 @@
 import {
+  applyConceptOutcome,
+  applyGuidedConceptOutcome,
+  applyWorkflowInterventionMetadata,
+  aggregateReadiness,
   buildGoalPhaseStates,
   buildInitialConceptSchedule,
+  buildInitialGuidedConceptProgress,
   buildSessionStorageKey,
   buildWorkflowDebugRoute,
+  buildWorkflowInterventionExposureRecord,
+  buildWorkflowInterventionResolutionKey,
+  compareSessionSnapshotContentIdentity,
+  computeReadiness,
   createSchedulerPolicy,
   createSessionIdentity,
   createSessionSnapshot,
   evaluateGoalPlan,
+  getConceptRepetitionPlan,
   pickNextConceptId,
-  applyConceptOutcome,
+  pickNextGuidedConceptId,
+  resolveRandomizedWorkflowInterventionArm,
+  setSessionSnapshotContentIdentity,
   type ConceptNode,
   type GoalPhaseSnapshot,
   type GoalPlan,
@@ -161,6 +173,185 @@ export const examplePanels: Record<string, ExamplePanelData> = {
       description: 'The harness flags duplicate IDs and concepts missing from the tree before browser regression runs.',
       input: { questionPool, conceptTree },
       output: validateConceptConsistency(config),
+    } satisfies ExamplePanelData
+  })(),
+  'guided-repetition': (() => {
+    const policy = createSchedulerPolicy({
+      masteryTarget: 4,
+      subskillIds: ['recognition', 'setup'],
+    })
+    const initial = buildInitialGuidedConceptProgress(['factoring'], policy)
+    const afterTwoLights = applyGuidedConceptOutcome(
+      applyGuidedConceptOutcome(initial, 'factoring', 'independent_correct', 1, { policy }),
+      'factoring',
+      'independent_correct',
+      2,
+      { policy },
+    )
+    const afterHardFailure = applyGuidedConceptOutcome(
+      afterTwoLights,
+      'factoring',
+      'independent_incorrect',
+      3,
+      { policy },
+    )
+    return {
+      label: 'Rep-phase ladder',
+      description: 'Two clean lights advance the concept, a hard miss opens recovery-lights with a support-concept detour.',
+      input: {
+        before: initial.factoring,
+        actions: [
+          { turn: 1, outcome: 'independent_correct' },
+          { turn: 2, outcome: 'independent_correct' },
+          { turn: 3, outcome: 'independent_incorrect' },
+        ],
+      },
+      output: {
+        afterTwoLights: {
+          state: afterTwoLights.factoring,
+          plan: getConceptRepetitionPlan(afterTwoLights.factoring),
+        },
+        afterHardFailure: {
+          state: afterHardFailure.factoring,
+          plan: getConceptRepetitionPlan(afterHardFailure.factoring),
+          nextConceptAtTurn4: pickNextGuidedConceptId(afterHardFailure, 4, { policy }),
+        },
+      },
+    } satisfies ExamplePanelData
+  })(),
+  'readiness-truthfulness': (() => {
+    const recognition = computeReadiness(
+      {
+        unitId: 'factoring:recognition',
+        phase: 'practicing',
+        attempts: [
+          { correct: true, occurredAt: '2026-04-15T12:00:00Z' },
+          { correct: true, occurredAt: '2026-04-16T12:00:00Z' },
+          { correct: false, occurredAt: '2026-04-17T12:00:00Z' },
+        ],
+        lastPracticedAt: '2026-04-17T12:00:00Z',
+        dueAt: '2026-04-19T12:00:00Z',
+      },
+      new Date('2026-04-18T09:00:00Z'),
+    )
+    const setup = computeReadiness(
+      {
+        unitId: 'factoring:setup',
+        phase: 'mastered',
+        attempts: [
+          { correct: true, occurredAt: '2026-04-12T12:00:00Z' },
+          { correct: true, occurredAt: '2026-04-14T12:00:00Z' },
+        ],
+        lastPracticedAt: '2026-04-14T12:00:00Z',
+        dueAt: '2026-04-22T12:00:00Z',
+      },
+      new Date('2026-04-18T09:00:00Z'),
+    )
+    return {
+      label: 'Readiness rollup',
+      description: 'Each unit gets a coarse 0–100 score plus phase; aggregateReadiness rolls children up without pretending to be an assessment instrument.',
+      input: { children: [recognition, setup] },
+      output: {
+        recognition,
+        setup,
+        aggregate: aggregateReadiness([recognition, setup]),
+      },
+    } satisfies ExamplePanelData
+  })(),
+  'content-identity-restore': (() => {
+    const identity = createSessionIdentity('demo-restore', { learnerId: 'learner@example.edu' })
+    const stored = setSessionSnapshotContentIdentity(
+      createSessionSnapshot(identity, { stage: 'recognize' }, { currentQuestionId: 'q-1' }),
+      { questionId: 'q-1', contentId: 'factoring.q-1', contentVersion: 3 },
+    )
+    const matchesCurrent = compareSessionSnapshotContentIdentity(stored, {
+      questionId: 'q-1',
+      contentId: 'factoring.q-1',
+      contentVersion: 3,
+    })
+    const driftedCurrent = compareSessionSnapshotContentIdentity(stored, {
+      questionId: 'q-1',
+      contentId: 'factoring.q-1',
+      contentVersion: 4,
+    })
+    return {
+      label: 'Persisted vs current content identity',
+      description: 'The session stamps a content identity on persist; on restore the consumer can ask the core whether authored content drifted.',
+      input: {
+        persisted: stored.metadata.contentIdentity,
+        currentVariants: {
+          matches: { questionId: 'q-1', contentId: 'factoring.q-1', contentVersion: 3 },
+          drifted: { questionId: 'q-1', contentId: 'factoring.q-1', contentVersion: 4 },
+        },
+      },
+      output: {
+        matchesCurrent,
+        driftedCurrent,
+      },
+    } satisfies ExamplePanelData
+  })(),
+  'workflow-interventions': (() => {
+    const resolutionKey = buildWorkflowInterventionResolutionKey({
+      sessionId: 'sess-42',
+      currentTurn: 7,
+      sourceQuestionId: 'factoring-q1',
+      conceptId: 'factoring',
+      targetLayer: 'support',
+    })
+    const arm = resolveRandomizedWorkflowInterventionArm('llm-support-v1', resolutionKey)
+    const exposure = buildWorkflowInterventionExposureRecord(
+      {
+        learnerId: 'learner@example.edu',
+        sessionId: 'sess-42',
+        experimentKey: 'llm-support-v1',
+        cohortMode: 'randomized',
+        resolutionKey,
+        conceptId: 'factoring',
+        sourceQuestionId: 'factoring-q1',
+        servedQuestionIdByArm: {
+          control: 'factoring-q1',
+          treatment: 'factoring-q1:llm-a',
+        },
+        unitId: 'unit-3',
+        sectionId: 'section-3a',
+        targetLayer: 'support',
+        interventionKind: 'llm-support',
+      },
+      {
+        exposureId: 'exp-0001',
+        createdAt: '2026-04-18T12:30:00Z',
+      },
+    )
+    const stamped = applyWorkflowInterventionMetadata(
+      { id: exposure.servedQuestionId, sourceQuestionId: 'factoring-q1' },
+      {
+        experimentKey: exposure.experimentKey,
+        experimentArm: exposure.resolvedArm,
+        exposureId: exposure.exposureId,
+        sourceQuestionId: exposure.sourceQuestionId,
+        questionOrigin: 'llm-generated',
+        interventionKind: exposure.interventionKind,
+      },
+    )
+    return {
+      label: 'Gated experiment exposure',
+      description: 'Same turn + same source question produce the same resolution key and arm; served questions carry experiment metadata that WF can gate on.',
+      input: {
+        resolution: {
+          sessionId: 'sess-42',
+          currentTurn: 7,
+          sourceQuestionId: 'factoring-q1',
+          conceptId: 'factoring',
+          targetLayer: 'support',
+        },
+        experimentKey: 'llm-support-v1',
+      },
+      output: {
+        resolutionKey,
+        arm,
+        exposure,
+        servedQuestion: stamped,
+      },
     } satisfies ExamplePanelData
   })(),
   'graph-subsystem': {

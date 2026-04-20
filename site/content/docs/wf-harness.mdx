@@ -10,6 +10,11 @@ relatedFeatures:
 
 The WF harness is **regression infrastructure**, not a substitute for low-context WF passes.
 
+The canonical repo docs adjacent to this layer are:
+
+- [`docs/wf-contract.md`](../../../docs/wf-contract.md)
+- [`docs/per-question-wf-gating.md`](../../../docs/per-question-wf-gating.md)
+
 It validates seven groups:
 
 1. question type coverage
@@ -35,5 +40,7 @@ That lets browser time focus on:
 - copy clarity
 - recovery paths
 - the visible framing of the learning loop
+
+Experimental or LLM-shaped question variants may need additional per-question gating even when deterministic harness checks pass.
 
 Read the [WF feature page](/showcase/features/wf-harness) for the config surface and contract framing.
