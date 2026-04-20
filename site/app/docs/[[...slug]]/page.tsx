@@ -29,8 +29,6 @@ export default async function DocsPage({
   return (
     <main className="docs-shell">
       <section className="docs-layout">
-        <DocsSidebar pages={allPages} currentHref={page.href} />
-
         <article className="docs-article">
           <p className="eyebrow">{page.frontmatter.section}</p>
           <h1>{page.frontmatter.title}</h1>
@@ -38,6 +36,8 @@ export default async function DocsPage({
           <p className="route-hint">Route: {page.href}</p>
           {page.content}
         </article>
+
+        <DocsSidebar pages={allPages} currentHref={page.href} />
       </section>
     </main>
   )
