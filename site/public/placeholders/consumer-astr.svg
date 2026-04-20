@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="astrGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#bd4d12" />
+      <stop offset="100%" stop-color="#f28d3f" />
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="24" fill="url(#astrGrad)" />
+  <!-- Orbit + planet glyph -->
+  <g fill="none" stroke="#ffffff" stroke-linecap="round">
+    <ellipse cx="60" cy="72" rx="32" ry="12" stroke-width="2.5" opacity="0.6" />
+    <circle cx="60" cy="72" r="8" fill="#ffffff" stroke="none" />
+    <circle cx="88" cy="68" r="2.5" fill="#ffffff" stroke="none" opacity="0.9" />
+  </g>
+  <!-- Monogram AS corner -->
+  <text x="60" y="36" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">AS</text>
+</svg>
