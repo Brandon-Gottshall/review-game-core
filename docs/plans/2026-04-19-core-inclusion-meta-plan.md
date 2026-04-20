@@ -116,6 +116,15 @@ Phase 3 exit criteria:
 - boundary items have clear seams and non-goals
 - none of them has quietly expanded into a consumer-owned domain
 
+### Current roadmap UI note
+
+The shared planning family can expose a roadmap UI primitive in core without claiming standalone WF completion for that surface.
+
+- A core-only roadmap export is package/runtime work, not yet proof that learners can discover or interpret it correctly in a real product path.
+- Typecheck, deterministic tests, and package build evidence are sufficient at the core-export stage.
+- Once a consumer app mounts the roadmap in an actual launcher, progress panel, quiz shell, or other learner-facing flow, that consumer must run a low-context WF pass against the real visible path.
+- That WF pass should explicitly judge progress interpretation and roadmap clarity: whether the learner can tell what is current, what is catch-up work, what is queued, and what completion means.
+
 ### Phase 4: Keep the local/process tail out of the core path
 
 These items still need owners, but they should not block shared-core delivery.
