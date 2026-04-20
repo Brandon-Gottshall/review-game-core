@@ -50,15 +50,25 @@ const makeConcept = (
   conceptId: overrides.conceptId ?? conceptId,
 });
 
+const getConcept = (
+  progressMap: GuidedConceptProgressMap<ReviewSubskill>,
+  conceptId = 'alpha'
+): GuidedConceptProgressState<ReviewSubskill> => {
+  const concept = progressMap[conceptId];
+  expect(concept).toBeDefined();
+  return concept!;
+};
+
 describe('buildInitialGuidedConceptProgress', () => {
   it('starts concepts at the first light rep with no guided state recorded', () => {
     const progress = buildInitialGuidedConceptProgress<ReviewSubskill>(['alpha', 'beta'], policy);
+    const alpha = getConcept(progress);
 
-    expect(progress.alpha.lightPassCount).toBe(0);
-    expect(progress.alpha.hardPassCount).toBe(0);
-    expect(progress.alpha.recoveryLightRemaining).toBe(0);
-    expect(progress.alpha.recoverySupportMode).toBe('none');
-    expect(getConceptRepetitionPlan(progress.alpha)).toEqual({
+    expect(alpha.lightPassCount).toBe(0);
+    expect(alpha.hardPassCount).toBe(0);
+    expect(alpha.recoveryLightRemaining).toBe(0);
+    expect(alpha.recoverySupportMode).toBe('none');
+    expect(getConceptRepetitionPlan(alpha)).toEqual({
       repPhase: 'light',
       repIndex: 1,
       supportMode: 'none',
@@ -79,11 +89,12 @@ describe('mergeGuidedConceptProgress', () => {
         recoverySupportMode: 'support-concept-recovery',
       },
     }, policy);
+    const alpha = getConcept(merged);
 
-    expect(merged.alpha.lightPassCount).toBe(4);
-    expect(merged.alpha.hardPassCount).toBe(1);
-    expect(merged.alpha.recoveryLightRemaining).toBe(2);
-    expect(merged.alpha.recoverySupportMode).toBe('support-concept-recovery');
+    expect(alpha.lightPassCount).toBe(4);
+    expect(alpha.hardPassCount).toBe(1);
+    expect(alpha.recoveryLightRemaining).toBe(2);
+    expect(alpha.recoverySupportMode).toBe('support-concept-recovery');
   });
 
   it('backfills guided fields from legacy schedule evidence when explicit fields are missing', () => {
@@ -95,11 +106,12 @@ describe('mergeGuidedConceptProgress', () => {
         supplementalExposureCount: 1,
       },
     }, policy);
+    const alpha = getConcept(merged);
 
-    expect(merged.alpha.lightPassCount).toBe(2);
-    expect(merged.alpha.hardPassCount).toBe(0);
-    expect(merged.alpha.recoveryLightRemaining).toBe(0);
-    expect(merged.alpha.recoverySupportMode).toBe('none');
+    expect(alpha.lightPassCount).toBe(2);
+    expect(alpha.hardPassCount).toBe(0);
+    expect(alpha.recoveryLightRemaining).toBe(0);
+    expect(alpha.recoverySupportMode).toBe('none');
   });
 });
 
@@ -110,14 +122,15 @@ describe('getConceptRepetitionPlan', () => {
     const lightTwo = applyGuidedConceptOutcome(lightOne, 'alpha', 'independent_correct', 2, { policy, phase: 'light' });
     const lightThree = applyGuidedConceptOutcome(lightTwo, 'alpha', 'independent_correct', 3, { policy, phase: 'light' });
     const lightFour = applyGuidedConceptOutcome(lightThree, 'alpha', 'independent_correct', 4, { policy, phase: 'light' });
+    const alpha = getConcept(lightFour);
 
-    expect(getConceptRepetitionPlan(lightFour.alpha)).toEqual({
+    expect(getConceptRepetitionPlan(alpha)).toEqual({
       repPhase: 'hard',
       repIndex: 5,
       supportMode: 'none',
       hardAttemptLimit: HARD_ATTEMPT_LIMIT,
     });
-    expect(getConceptRepetitionPlanFromRoot(lightFour.alpha).hardAttemptLimit).toBe(ROOT_HARD_ATTEMPT_LIMIT);
+    expect(getConceptRepetitionPlanFromRoot(alpha).hardAttemptLimit).toBe(ROOT_HARD_ATTEMPT_LIMIT);
   });
 });
 
@@ -128,11 +141,12 @@ describe('applyGuidedConceptOutcome', () => {
       policy,
       phase: 'light',
     });
+    const alpha = getConcept(progressed);
 
-    expect(progressed.alpha.independentPassCount).toBe(0);
-    expect(progressed.alpha.supportedPassCount).toBe(1);
-    expect(progressed.alpha.lightPassCount).toBe(1);
-    expect(progressed.alpha.recoveryDue).toBe(false);
+    expect(alpha.independentPassCount).toBe(0);
+    expect(alpha.supportedPassCount).toBe(1);
+    expect(alpha.lightPassCount).toBe(1);
+    expect(alpha.recoveryDue).toBe(false);
   });
 
   it('awards proof only on hard independent solves and sets retention after mastery', () => {
@@ -144,14 +158,17 @@ describe('applyGuidedConceptOutcome', () => {
     const hardOne = applyGuidedConceptOutcome(lightFour, 'alpha', 'independent_correct', 5, { policy, phase: 'hard' });
     const hardTwo = applyGuidedConceptOutcome(hardOne, 'alpha', 'independent_correct', 8, { policy, phase: 'hard' });
     const hardThree = applyGuidedConceptOutcome(hardTwo, 'alpha', 'independent_correct', 14, { policy, phase: 'hard' });
+    const alphaAfterHardOne = getConcept(hardOne);
+    const alphaAfterHardTwo = getConcept(hardTwo);
+    const alphaAfterHardThree = getConcept(hardThree);
 
-    expect(hardOne.alpha.independentPassCount).toBe(1);
-    expect(hardOne.alpha.hardPassCount).toBe(1);
-    expect(hardTwo.alpha.hardPassCount).toBe(HARD_REP_TARGET);
-    expect(hardThree.alpha.mastered).toBe(true);
-    expect(hardThree.alpha.retentionCheckPassed).toBe(false);
-    expect(hardThree.alpha.retentionCheckEligibleTurn).toBe(23);
-    expect(isRetentionDue(hardThree.alpha, 23, policy)).toBe(true);
+    expect(alphaAfterHardOne.independentPassCount).toBe(1);
+    expect(alphaAfterHardOne.hardPassCount).toBe(1);
+    expect(alphaAfterHardTwo.hardPassCount).toBe(HARD_REP_TARGET);
+    expect(alphaAfterHardThree.mastered).toBe(true);
+    expect(alphaAfterHardThree.retentionCheckPassed).toBe(false);
+    expect(alphaAfterHardThree.retentionCheckEligibleTurn).toBe(23);
+    expect(isRetentionDue(alphaAfterHardThree, 23, policy)).toBe(true);
   });
 
   it('queues two recovery-light reps after a hard miss', () => {
@@ -167,11 +184,12 @@ describe('applyGuidedConceptOutcome', () => {
       phase: 'hard',
       recoverySupportMode: 'same-concept-recovery',
     });
+    const alpha = getConcept(failed);
 
-    expect(failed.alpha.recoveryDue).toBe(true);
-    expect(failed.alpha.recoveryLightRemaining).toBe(HARD_FAILURE_RECOVERY_LIGHTS);
-    expect(failed.alpha.recoverySupportMode).toBe('same-concept-recovery');
-    expect(getConceptRepetitionPlan(failed.alpha)).toEqual({
+    expect(alpha.recoveryDue).toBe(true);
+    expect(alpha.recoveryLightRemaining).toBe(HARD_FAILURE_RECOVERY_LIGHTS);
+    expect(alpha.recoverySupportMode).toBe('same-concept-recovery');
+    expect(getConceptRepetitionPlan(alpha)).toEqual({
       repPhase: 'recovery-light',
       repIndex: 3,
       supportMode: 'same-concept-recovery',
@@ -190,10 +208,11 @@ describe('applyGuidedConceptOutcome', () => {
     const next = applySupplementalGuidedConceptExposure(progress, 'alpha', 5, {
       wasClean: false,
     });
+    const alpha = getConcept(next);
 
-    expect(next.alpha.lightPassCount).toBe(4);
-    expect(next.alpha.hardPassCount).toBe(1);
-    expect(next.alpha.nextEligibleTurn).toBe(6);
+    expect(alpha.lightPassCount).toBe(4);
+    expect(alpha.hardPassCount).toBe(1);
+    expect(alpha.nextEligibleTurn).toBe(6);
   });
 });
 
@@ -225,8 +244,9 @@ describe('selection helpers', () => {
         nextEligibleTurn: 5,
       }),
     } satisfies GuidedConceptProgressMap<ReviewSubskill>;
+    const alpha = getConcept(progress);
 
-    expect(getWeakestSubskills(progress.alpha, 2)).toEqual(['structure', 'recognition']);
+    expect(getWeakestSubskills(alpha, 2)).toEqual(['structure', 'recognition']);
     expect(pickNextGuidedConceptId(progress, 5, { policy })).toBe('alpha');
   });
 

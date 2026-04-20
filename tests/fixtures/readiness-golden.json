@@ -47,7 +47,7 @@
     },
     "now": "2026-04-19T12:00:00.000Z",
     "expected": {
-      "score": 28,
+      "score": 29,
       "phase": "shaky"
     }
   }

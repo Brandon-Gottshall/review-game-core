@@ -27,6 +27,30 @@ export interface SessionSnapshot<TState extends Record<string, unknown> = Record
   metadata: Record<string, unknown>;
 }
 
+export type SessionContentVersion = string | number;
+
+export interface SessionContentIdentity {
+  questionId?: string | null;
+  contentId?: string | null;
+  contentVersion?: SessionContentVersion | null;
+}
+
+export interface ResolvedSessionContentIdentity {
+  questionId: string | null;
+  contentId: string | null;
+  contentVersion: SessionContentVersion | null;
+}
+
+export type SessionContentIdentityField = keyof ResolvedSessionContentIdentity;
+
+export interface SessionContentIdentityComparison {
+  matches: boolean;
+  mismatchFields: SessionContentIdentityField[];
+  unknownFields: SessionContentIdentityField[];
+  persisted: ResolvedSessionContentIdentity;
+  current: ResolvedSessionContentIdentity;
+}
+
 export interface SessionSnapshotFactoryOptions {
   version?: number;
   route?: string | null;
@@ -38,6 +62,7 @@ export interface SessionSnapshotFactoryOptions {
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SESSION_CONTENT_IDENTITY_METADATA_KEY = 'contentIdentity';
 
 /**
  * Normalize a learner identifier to lowercase, trimmed form.
@@ -62,6 +87,54 @@ function isNonEmptyString(value: unknown): value is string {
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasOwnField(record: Record<string, unknown>, field: string): boolean {
+  return Object.prototype.hasOwnProperty.call(record, field);
+}
+
+function normalizeNullableStringValue(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function readNullableStringField(record: Record<string, unknown>, field: string): string | null | undefined {
+  return hasOwnField(record, field) ? normalizeNullableStringValue(record[field]) : undefined;
+}
+
+function readContentVersionField(
+  record: Record<string, unknown>,
+  field: string
+): SessionContentVersion | null | undefined {
+  if (!hasOwnField(record, field)) {
+    return undefined;
+  }
+
+  const value = record[field];
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  return normalizeNullableStringValue(value);
+}
+
+function resolveSessionContentIdentity(
+  value: unknown,
+  fallbackQuestionId: string | null = null
+): ResolvedSessionContentIdentity {
+  const record = isPlainRecord(value) ? value : {};
+  const questionId = readNullableStringField(record, 'questionId');
+  const contentId = readNullableStringField(record, 'contentId');
+  const contentVersion = readContentVersionField(record, 'contentVersion');
+
+  return {
+    questionId: questionId === undefined ? fallbackQuestionId ?? null : questionId,
+    contentId: contentId ?? null,
+    contentVersion: contentVersion ?? null,
+  };
 }
 
 export function createSessionIdentity(
@@ -130,6 +203,92 @@ export function createSessionSnapshot<TState extends Record<string, unknown> = R
     complete: options.complete ?? false,
     state,
     metadata: options.metadata ?? {},
+  };
+}
+
+export function readSessionSnapshotContentIdentity<
+  TState extends Record<string, unknown> = Record<string, unknown>
+>(
+  snapshot: Pick<SessionSnapshot<TState>, 'currentQuestionId' | 'metadata'>
+): ResolvedSessionContentIdentity {
+  return resolveSessionContentIdentity(
+    snapshot.metadata[SESSION_CONTENT_IDENTITY_METADATA_KEY],
+    snapshot.currentQuestionId
+  );
+}
+
+export function setSessionSnapshotContentIdentity<
+  TState extends Record<string, unknown> = Record<string, unknown>
+>(
+  snapshot: SessionSnapshot<TState>,
+  identity: SessionContentIdentity
+): SessionSnapshot<TState> {
+  const resolvedIdentity = resolveSessionContentIdentity(identity, snapshot.currentQuestionId);
+
+  return {
+    ...snapshot,
+    currentQuestionId: resolvedIdentity.questionId,
+    metadata: {
+      ...snapshot.metadata,
+      [SESSION_CONTENT_IDENTITY_METADATA_KEY]: resolvedIdentity,
+    },
+  };
+}
+
+export function clearSessionSnapshotContentIdentity<
+  TState extends Record<string, unknown> = Record<string, unknown>
+>(
+  snapshot: SessionSnapshot<TState>
+): SessionSnapshot<TState> {
+  if (!hasOwnField(snapshot.metadata, SESSION_CONTENT_IDENTITY_METADATA_KEY)) {
+    return snapshot;
+  }
+
+  const metadata = { ...snapshot.metadata };
+  delete metadata[SESSION_CONTENT_IDENTITY_METADATA_KEY];
+
+  return {
+    ...snapshot,
+    metadata,
+  };
+}
+
+export function compareSessionSnapshotContentIdentity<
+  TState extends Record<string, unknown> = Record<string, unknown>
+>(
+  snapshot: Pick<SessionSnapshot<TState>, 'currentQuestionId' | 'metadata'>,
+  currentIdentity: SessionContentIdentity
+): SessionContentIdentityComparison {
+  const persisted = readSessionSnapshotContentIdentity(snapshot);
+  const current = resolveSessionContentIdentity(currentIdentity);
+  const mismatchFields: SessionContentIdentityField[] = [];
+  const unknownFields: SessionContentIdentityField[] = [];
+
+  for (const field of ['questionId', 'contentId', 'contentVersion'] as const) {
+    const currentValue = current[field];
+
+    if (currentValue === null) {
+      continue;
+    }
+
+    const persistedValue = persisted[field];
+
+    if (persistedValue === null) {
+      unknownFields.push(field);
+      continue;
+    }
+
+    if (persistedValue !== currentValue) {
+      mismatchFields.push(field);
+    }
+  }
+
+  return {
+    matches: mismatchFields.length === 0,
+    mismatchFields,
+    unknownFields,
+    persisted,
+    current,
   };
 }
 

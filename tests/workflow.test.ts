@@ -9,10 +9,14 @@ import {
 } from '../src/workflow/persistence.js';
 import {
   buildSessionStorageKey,
+  clearSessionSnapshotContentIdentity,
+  compareSessionSnapshotContentIdentity,
   createSessionIdentity,
   createSessionSnapshot,
+  readSessionSnapshotContentIdentity,
   normalizeSessionSnapshot,
   resetSessionSnapshot,
+  setSessionSnapshotContentIdentity,
   isSessionSnapshot,
 } from '../src/workflow/session.js';
 import {
@@ -97,6 +101,111 @@ describe('workflow/session', () => {
     expect(reset.currentQuestionId).toBeNull();
     expect(reset.state).toEqual({ progress: 0 });
     expect(reset.updatedAt).toBe('2026-04-12T12:02:00.000Z');
+  });
+
+  it('normalizes unknown restore input into a valid snapshot envelope', () => {
+    const identity = createSessionIdentity('session-2', {
+      learnerId: 'Student@Example.com',
+    });
+
+    const restored = normalizeSessionSnapshot(
+      { state: { progress: 7 } },
+      identity,
+      {
+        route: '/quiz?wf=1',
+        currentConceptId: 'functions',
+        currentQuestionId: 'q-restore',
+        metadata: { source: 'restore' },
+        now: '2026-04-12T13:00:00.000Z',
+      }
+    );
+
+    expect(restored.sessionId).toBe('session-2');
+    expect(restored.learnerId).toBe('Student@Example.com');
+    expect(restored.route).toBe('/quiz?wf=1');
+    expect(restored.currentConceptId).toBe('functions');
+    expect(restored.currentQuestionId).toBe('q-restore');
+    expect(restored.metadata).toEqual({ source: 'restore' });
+    expect(restored.state).toEqual({ progress: 7 });
+    expect(isSessionSnapshot(restored)).toBe(true);
+  });
+
+  it('stores and clears canonical content identity markers inside snapshot metadata', () => {
+    const identity = createSessionIdentity('session-3');
+    const snapshot = createSessionSnapshot(
+      identity,
+      { progress: 1 },
+      {
+        currentQuestionId: 'q-identity',
+        metadata: { source: 'browser' },
+      }
+    );
+
+    const stamped = setSessionSnapshotContentIdentity(snapshot, {
+      contentId: 'trace-variables:q-identity',
+      contentVersion: '2026-04-19-a',
+    });
+
+    expect(readSessionSnapshotContentIdentity(stamped)).toEqual({
+      questionId: 'q-identity',
+      contentId: 'trace-variables:q-identity',
+      contentVersion: '2026-04-19-a',
+    });
+    expect(stamped.metadata).toEqual({
+      source: 'browser',
+      contentIdentity: {
+        questionId: 'q-identity',
+        contentId: 'trace-variables:q-identity',
+        contentVersion: '2026-04-19-a',
+      },
+    });
+    expect(isSessionSnapshot(stamped)).toBe(true);
+
+    const cleared = clearSessionSnapshotContentIdentity(stamped);
+
+    expect(readSessionSnapshotContentIdentity(cleared)).toEqual({
+      questionId: 'q-identity',
+      contentId: null,
+      contentVersion: null,
+    });
+    expect(cleared.metadata).toEqual({ source: 'browser' });
+    expect(isSessionSnapshot(cleared)).toBe(true);
+  });
+
+  it('reports explicit content drift separately from legacy unknown fields', () => {
+    const identity = createSessionIdentity('session-4');
+    const stamped = setSessionSnapshotContentIdentity(
+      createSessionSnapshot(identity, { progress: 2 }, { currentQuestionId: 'q-restore' }),
+      {
+        contentId: 'multiple-choice:q-restore',
+        contentVersion: 'v1',
+      }
+    );
+
+    const drifted = compareSessionSnapshotContentIdentity(stamped, {
+      questionId: 'q-restore',
+      contentId: 'multiple-choice:q-restore',
+      contentVersion: 'v2',
+    });
+
+    expect(drifted.matches).toBe(false);
+    expect(drifted.mismatchFields).toEqual(['contentVersion']);
+    expect(drifted.unknownFields).toEqual([]);
+
+    const legacy = createSessionSnapshot(
+      identity,
+      { progress: 3 },
+      { currentQuestionId: 'q-legacy' }
+    );
+    const unverifiable = compareSessionSnapshotContentIdentity(legacy, {
+      questionId: 'q-legacy',
+      contentId: 'free-response:q-legacy',
+      contentVersion: 'hash-2',
+    });
+
+    expect(unverifiable.matches).toBe(true);
+    expect(unverifiable.mismatchFields).toEqual([]);
+    expect(unverifiable.unknownFields).toEqual(['contentId', 'contentVersion']);
   });
 });
 
@@ -212,7 +321,7 @@ describe('workflow/quiz-engine', () => {
     const restored = syncQuizEngineQuestionState(supported, {
       question,
       stageIndex: 1,
-      stageAnswers: ['A'],
+      stagedAnswers: ['A'],
       supportActive: true,
       outcome: 'supported',
     });
@@ -234,6 +343,40 @@ describe('workflow/quiz-engine', () => {
     expect(recovered.recoveryCount).toBe(1);
     expect(completed.phase).toBe('complete');
     expect(completed.completedQuestionIds).toEqual(['q-2']);
+  });
+
+  it('deduplicates completed question ids during sync and preserves routing state', () => {
+    const question = {
+      id: 'q-3',
+      concept: 'functions',
+      type: 'free_response',
+      stageCount: 1,
+    };
+
+    const initial = createQuizEngineState({
+      route: '/quiz?question=q-3',
+      currentQuestion: question,
+      currentQuestionId: question.id,
+      currentConcept: question.concept,
+      completedQuestionIds: ['q-3'],
+      lastOutcome: 'answered',
+    });
+
+    const synced = syncQuizEngineQuestionState(initial, {
+      route: '/quiz?wf=1&question=q-3',
+      question,
+      stageIndex: 0,
+      stagedAnswers: ['final'],
+      complete: true,
+      completedQuestionId: 'q-3',
+      outcome: 'completed',
+    });
+
+    expect(synced.phase).toBe('complete');
+    expect(synced.route).toBe('/quiz?wf=1&question=q-3');
+    expect(synced.completedQuestionIds).toEqual(['q-3']);
+    expect(synced.complete).toBe(true);
+    expect(synced.lastOutcome).toBe('completed');
   });
 });
 
