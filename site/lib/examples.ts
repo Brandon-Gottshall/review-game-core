@@ -181,40 +181,39 @@ export const examplePanels: Record<string, ExamplePanelData> = {
       subskillIds: ['recognition', 'setup'],
     })
     const initial = buildInitialGuidedConceptProgress(['factoring'], policy)
-    const afterTwoLights = applyGuidedConceptOutcome(
-      applyGuidedConceptOutcome(initial, 'factoring', 'independent_correct', 1, { policy }),
-      'factoring',
-      'independent_correct',
-      2,
-      { policy },
+    const afterLightSweep = [1, 2, 3, 4].reduce(
+      (acc, turn) => applyGuidedConceptOutcome(acc, 'factoring', 'independent_correct', turn, { policy }),
+      initial,
     )
-    const afterHardFailure = applyGuidedConceptOutcome(
-      afterTwoLights,
+    const afterHardStumble = applyGuidedConceptOutcome(
+      afterLightSweep,
       'factoring',
-      'independent_incorrect',
-      3,
+      'assisted',
+      5,
       { policy },
     )
     return {
       label: 'Rep-phase ladder',
-      description: 'Two clean lights advance the concept, a hard miss opens recovery-lights with a support-concept detour.',
+      description: 'Four clean lights clear the light phase; an assisted hard attempt opens recovery-lights with a same-concept detour.',
       input: {
         before: initial.factoring,
         actions: [
           { turn: 1, outcome: 'independent_correct' },
           { turn: 2, outcome: 'independent_correct' },
-          { turn: 3, outcome: 'independent_incorrect' },
+          { turn: 3, outcome: 'independent_correct' },
+          { turn: 4, outcome: 'independent_correct' },
+          { turn: 5, outcome: 'assisted' },
         ],
       },
       output: {
-        afterTwoLights: {
-          state: afterTwoLights.factoring,
-          plan: getConceptRepetitionPlan(afterTwoLights.factoring),
+        afterLightSweep: {
+          state: afterLightSweep.factoring,
+          plan: getConceptRepetitionPlan(afterLightSweep.factoring),
         },
-        afterHardFailure: {
-          state: afterHardFailure.factoring,
-          plan: getConceptRepetitionPlan(afterHardFailure.factoring),
-          nextConceptAtTurn4: pickNextGuidedConceptId(afterHardFailure, 4, { policy }),
+        afterHardStumble: {
+          state: afterHardStumble.factoring,
+          plan: getConceptRepetitionPlan(afterHardStumble.factoring),
+          nextConceptAtTurn6: pickNextGuidedConceptId(afterHardStumble, 6, { policy }),
         },
       },
     } satisfies ExamplePanelData
