@@ -13,7 +13,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./theme.css": "./theme.css",
+    "./theme.css": {
+      "style": "./theme.css",
+      "default": "./theme.css"
+    },
     "./ui": {
       "types": "./dist/ui/index.d.ts",
       "default": "./dist/ui/index.js"

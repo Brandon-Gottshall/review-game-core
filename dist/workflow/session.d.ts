@@ -24,6 +24,25 @@ export interface SessionSnapshot<TState extends Record<string, unknown> = Record
     state: TState;
     metadata: Record<string, unknown>;
 }
+export type SessionContentVersion = string | number;
+export interface SessionContentIdentity {
+    questionId?: string | null;
+    contentId?: string | null;
+    contentVersion?: SessionContentVersion | null;
+}
+export interface ResolvedSessionContentIdentity {
+    questionId: string | null;
+    contentId: string | null;
+    contentVersion: SessionContentVersion | null;
+}
+export type SessionContentIdentityField = keyof ResolvedSessionContentIdentity;
+export interface SessionContentIdentityComparison {
+    matches: boolean;
+    mismatchFields: SessionContentIdentityField[];
+    unknownFields: SessionContentIdentityField[];
+    persisted: ResolvedSessionContentIdentity;
+    current: ResolvedSessionContentIdentity;
+}
 export interface SessionSnapshotFactoryOptions {
     version?: number;
     route?: string | null;
@@ -46,6 +65,10 @@ export declare function isEmailLearnerId(value?: string | null): boolean;
 export declare function createSessionIdentity(sessionId: string, options?: Pick<SessionIdentity, 'learnerId' | 'anonymousId'>): SessionIdentity;
 export declare function buildSessionStorageKey(policy: SessionStoragePolicy, identity: SessionIdentity): string;
 export declare function createSessionSnapshot<TState extends Record<string, unknown> = Record<string, unknown>>(identity: SessionIdentity, state: TState, options?: SessionSnapshotFactoryOptions): SessionSnapshot<TState>;
+export declare function readSessionSnapshotContentIdentity<TState extends Record<string, unknown> = Record<string, unknown>>(snapshot: Pick<SessionSnapshot<TState>, 'currentQuestionId' | 'metadata'>): ResolvedSessionContentIdentity;
+export declare function setSessionSnapshotContentIdentity<TState extends Record<string, unknown> = Record<string, unknown>>(snapshot: SessionSnapshot<TState>, identity: SessionContentIdentity): SessionSnapshot<TState>;
+export declare function clearSessionSnapshotContentIdentity<TState extends Record<string, unknown> = Record<string, unknown>>(snapshot: SessionSnapshot<TState>): SessionSnapshot<TState>;
+export declare function compareSessionSnapshotContentIdentity<TState extends Record<string, unknown> = Record<string, unknown>>(snapshot: Pick<SessionSnapshot<TState>, 'currentQuestionId' | 'metadata'>, currentIdentity: SessionContentIdentity): SessionContentIdentityComparison;
 export declare function isSessionSnapshot<TState extends Record<string, unknown> = Record<string, unknown>>(value: unknown): value is SessionSnapshot<TState>;
 export declare function normalizeSessionSnapshot<TState extends Record<string, unknown> = Record<string, unknown>>(value: unknown, identity: SessionIdentity, options?: Partial<SessionSnapshotFactoryOptions>): SessionSnapshot<TState>;
 export declare function resetSessionSnapshot<TState extends Record<string, unknown> = Record<string, unknown>>(snapshot: SessionSnapshot<TState>, options?: {

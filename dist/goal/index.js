@@ -172,26 +172,27 @@ export function evaluateGoalPlan(plan, snapshots, context = {}) {
     });
     const firstIncompleteIndex = baseStates.findIndex((phase) => !phase.isComplete);
     let primaryIndex = -1;
-    let catchUpIndex = -1;
+    const catchUpIndexes = new Set();
     if (firstIncompleteIndex >= 0) {
-        const firstIncomplete = baseStates[firstIncompleteIndex];
-        if (!firstIncomplete) {
-            throw new Error('Goal planner could not resolve the first incomplete phase');
-        }
-        const shouldAdvance = (firstIncomplete.timeStatus === 'past_due'
-            && firstIncomplete.deadlineBehavior === 'advance_after_deadline');
-        if (shouldAdvance) {
-            const nextIncompleteIndex = baseStates.findIndex((phase, index) => (index > firstIncompleteIndex && !phase.isComplete));
-            if (nextIncompleteIndex >= 0) {
-                catchUpIndex = firstIncompleteIndex;
-                primaryIndex = nextIncompleteIndex;
+        let candidateIndex = firstIncompleteIndex;
+        while (candidateIndex >= 0) {
+            const candidatePhase = baseStates[candidateIndex];
+            if (!candidatePhase) {
+                throw new Error('Goal planner could not resolve an incomplete phase');
             }
-            else {
-                primaryIndex = firstIncompleteIndex;
+            const shouldAdvance = (candidatePhase.timeStatus === 'past_due'
+                && candidatePhase.deadlineBehavior === 'advance_after_deadline');
+            if (!shouldAdvance) {
+                primaryIndex = candidateIndex;
+                break;
             }
-        }
-        else {
-            primaryIndex = firstIncompleteIndex;
+            const nextIncompleteIndex = baseStates.findIndex((phase, index) => (index > candidateIndex && !phase.isComplete));
+            if (nextIncompleteIndex < 0) {
+                primaryIndex = candidateIndex;
+                break;
+            }
+            catchUpIndexes.add(candidateIndex);
+            candidateIndex = nextIncompleteIndex;
         }
     }
     const evaluatedPhases = baseStates.map((phase, index) => {
@@ -205,7 +206,7 @@ export function evaluateGoalPlan(plan, snapshots, context = {}) {
                 recommendationRole: 'primary',
             };
         }
-        if (index === catchUpIndex) {
+        if (catchUpIndexes.has(index)) {
             return {
                 ...phase,
                 recommendationRole: 'catch_up',

@@ -1,4 +1,5 @@
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SESSION_CONTENT_IDENTITY_METADATA_KEY = 'contentIdentity';
 /**
  * Normalize a learner identifier to lowercase, trimmed form.
  * Returns an empty string for null/undefined/blank inputs.
@@ -19,6 +20,39 @@ function isNonEmptyString(value) {
 }
 function isPlainRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function hasOwnField(record, field) {
+    return Object.prototype.hasOwnProperty.call(record, field);
+}
+function normalizeNullableStringValue(value) {
+    if (typeof value !== 'string')
+        return null;
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
+}
+function readNullableStringField(record, field) {
+    return hasOwnField(record, field) ? normalizeNullableStringValue(record[field]) : undefined;
+}
+function readContentVersionField(record, field) {
+    if (!hasOwnField(record, field)) {
+        return undefined;
+    }
+    const value = record[field];
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : null;
+    }
+    return normalizeNullableStringValue(value);
+}
+function resolveSessionContentIdentity(value, fallbackQuestionId = null) {
+    const record = isPlainRecord(value) ? value : {};
+    const questionId = readNullableStringField(record, 'questionId');
+    const contentId = readNullableStringField(record, 'contentId');
+    const contentVersion = readContentVersionField(record, 'contentVersion');
+    return {
+        questionId: questionId === undefined ? fallbackQuestionId ?? null : questionId,
+        contentId: contentId ?? null,
+        contentVersion: contentVersion ?? null,
+    };
 }
 export function createSessionIdentity(sessionId, options = {}) {
     if (!isNonEmptyString(sessionId)) {
@@ -68,6 +102,58 @@ export function createSessionSnapshot(identity, state, options = {}) {
         complete: options.complete ?? false,
         state,
         metadata: options.metadata ?? {},
+    };
+}
+export function readSessionSnapshotContentIdentity(snapshot) {
+    return resolveSessionContentIdentity(snapshot.metadata[SESSION_CONTENT_IDENTITY_METADATA_KEY], snapshot.currentQuestionId);
+}
+export function setSessionSnapshotContentIdentity(snapshot, identity) {
+    const resolvedIdentity = resolveSessionContentIdentity(identity, snapshot.currentQuestionId);
+    return {
+        ...snapshot,
+        currentQuestionId: resolvedIdentity.questionId,
+        metadata: {
+            ...snapshot.metadata,
+            [SESSION_CONTENT_IDENTITY_METADATA_KEY]: resolvedIdentity,
+        },
+    };
+}
+export function clearSessionSnapshotContentIdentity(snapshot) {
+    if (!hasOwnField(snapshot.metadata, SESSION_CONTENT_IDENTITY_METADATA_KEY)) {
+        return snapshot;
+    }
+    const metadata = { ...snapshot.metadata };
+    delete metadata[SESSION_CONTENT_IDENTITY_METADATA_KEY];
+    return {
+        ...snapshot,
+        metadata,
+    };
+}
+export function compareSessionSnapshotContentIdentity(snapshot, currentIdentity) {
+    const persisted = readSessionSnapshotContentIdentity(snapshot);
+    const current = resolveSessionContentIdentity(currentIdentity);
+    const mismatchFields = [];
+    const unknownFields = [];
+    for (const field of ['questionId', 'contentId', 'contentVersion']) {
+        const currentValue = current[field];
+        if (currentValue === null) {
+            continue;
+        }
+        const persistedValue = persisted[field];
+        if (persistedValue === null) {
+            unknownFields.push(field);
+            continue;
+        }
+        if (persistedValue !== currentValue) {
+            mismatchFields.push(field);
+        }
+    }
+    return {
+        matches: mismatchFields.length === 0,
+        mismatchFields,
+        unknownFields,
+        persisted,
+        current,
     };
 }
 export function isSessionSnapshot(value) {

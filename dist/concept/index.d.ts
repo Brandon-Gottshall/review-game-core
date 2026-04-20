@@ -78,4 +78,6 @@ export interface QuestionForMapping {
  * the WF harness catches those.
  */
 export declare function populateConceptQuestions(tree: ConceptTree, questions: QuestionForMapping[]): ConceptTree;
+export * from './course-units.js';
+export * from './hierarchy.js';
 //# sourceMappingURL=index.d.ts.map

@@ -119,4 +119,6 @@ export function populateConceptQuestions(tree, questions) {
     }
     return populated;
 }
+export * from './course-units.js';
+export * from './hierarchy.js';
 //# sourceMappingURL=index.js.map

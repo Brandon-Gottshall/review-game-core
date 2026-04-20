@@ -30,7 +30,7 @@ export interface QuizEngineState<TQuestion extends QuizEngineQuestion = QuizEngi
     complete: boolean;
 }
 export interface QuizEngineAction<TQuestion extends QuizEngineQuestion = QuizEngineQuestion> {
-    type: 'route' | 'select-question' | 'advance-stage' | 'support' | 'recovery' | 'complete' | 'reset';
+    type: 'route' | 'select-question' | 'sync-question-state' | 'advance-stage' | 'support' | 'recovery' | 'complete' | 'reset';
     route?: string;
     question?: TQuestion;
     questionId?: string;
@@ -41,6 +41,10 @@ export interface QuizEngineAction<TQuestion extends QuizEngineQuestion = QuizEng
     completedQuestionId?: string;
     currentQuestion?: TQuestion | null;
     stageAnswers?: readonly string[];
+    complete?: boolean;
+    supportActive?: boolean;
+    recoveryActive?: boolean;
+    outcome?: QuizEngineState<TQuestion>['lastOutcome'];
 }
 export declare function createQuizEngineState<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(snapshot?: Partial<QuizEngineState<TQuestion>>): QuizEngineState<TQuestion>;
 export declare function routeQuizEngine<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(state: QuizEngineState<TQuestion>, route: string, config?: Pick<QuizEngineConfig<TQuestion>, 'routeQuestionId' | 'questions' | 'stageCountForQuestion'>): QuizEngineState<TQuestion>;
@@ -50,8 +54,21 @@ export declare function advanceQuizStage<TQuestion extends QuizEngineQuestion = 
     stageCount?: number;
     completeWhenLastStage?: boolean;
 }): QuizEngineState<TQuestion>;
+export declare function syncQuizEngineQuestionState<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(state: QuizEngineState<TQuestion>, options?: {
+    route?: string | null;
+    question?: TQuestion | null;
+    stageIndex?: number;
+    stageCount?: number;
+    stagedAnswers?: readonly string[];
+    supportActive?: boolean;
+    recoveryActive?: boolean;
+    complete?: boolean;
+    outcome?: QuizEngineState<TQuestion>['lastOutcome'];
+    completedQuestionId?: string | null;
+}): QuizEngineState<TQuestion>;
 export declare function enterSupportState<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(state: QuizEngineState<TQuestion>): QuizEngineState<TQuestion>;
 export declare function enterRecoveryState<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(state: QuizEngineState<TQuestion>): QuizEngineState<TQuestion>;
 export declare function completeQuizQuestion<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(state: QuizEngineState<TQuestion>, completedQuestionId?: string): QuizEngineState<TQuestion>;
 export declare function resetQuizEngine<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(snapshot?: Partial<QuizEngineState<TQuestion>>): QuizEngineState<TQuestion>;
+export declare function reduceQuizEngine<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(state: QuizEngineState<TQuestion>, action: QuizEngineAction<TQuestion>, config?: QuizEngineConfig<TQuestion>): QuizEngineState<TQuestion>;
 //# sourceMappingURL=quiz-engine.d.ts.map
