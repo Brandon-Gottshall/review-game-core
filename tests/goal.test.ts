@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildGoalPhaseStates,
+  buildMasteryWeightedTrackWeights,
   evaluateGoalPlan,
   getActiveGoalPhaseState,
   getGoalTrackPriority,
+  pickMasteryWeightedTrack,
   resolveGoalLocalDate,
   type GoalPhaseSnapshot,
   type GoalPlan,
@@ -35,6 +37,7 @@ describe('goal planner', () => {
   it('re-exports the planning helpers from the package root', () => {
     expect(reviewGameCore.evaluateGoalPlan).toBeTypeOf('function')
     expect(reviewGameCore.buildGoalPhaseStates).toBeTypeOf('function')
+    expect(reviewGameCore.pickMasteryWeightedTrack).toBeTypeOf('function')
   })
 
   it('marks the first incomplete phase as active', () => {
@@ -149,6 +152,103 @@ describe('goal planner', () => {
     })
 
     expect(getGoalTrackPriority(evaluation.phases)).toEqual(['final', 'exam3', 'exam2'])
+  })
+
+  it('builds mastery-weighted track weights from mastered ratios with a selectable floor', () => {
+    expect(buildMasteryWeightedTrackWeights([
+      {
+        trackId: 'exam3',
+        masteredUnits: 0,
+        totalUnits: 10,
+      },
+      {
+        trackId: 'final',
+        masteredUnits: 9,
+        totalUnits: 10,
+      },
+      {
+        trackId: 'exam2',
+        masteredUnits: 10,
+        totalUnits: 10,
+      },
+    ])).toEqual([
+      expect.objectContaining({
+        trackId: 'exam3',
+        masteryRatio: 0,
+        masteryGap: 1,
+        weight: 1,
+      }),
+      expect.objectContaining({
+        trackId: 'final',
+        masteryRatio: 0.9,
+        masteryGap: 0.1,
+        weight: 0.15,
+      }),
+      expect.objectContaining({
+        trackId: 'exam2',
+        masteryRatio: 1,
+        masteryGap: 0,
+        weight: 0.15,
+      }),
+    ])
+  })
+
+  it('uses weighted random selection to favor weaker tracks without excluding strong ones', () => {
+    const candidates = [
+      {
+        trackId: 'exam3',
+        masteredUnits: 0,
+        totalUnits: 10,
+      },
+      {
+        trackId: 'final',
+        masteredUnits: 9,
+        totalUnits: 10,
+      },
+    ] as const
+
+    expect(pickMasteryWeightedTrack(candidates, {
+      random: () => 0.1,
+    })?.trackId).toBe('exam3')
+
+    expect(pickMasteryWeightedTrack(candidates, {
+      random: () => 0.99,
+    })?.trackId).toBe('final')
+  })
+
+  it('keeps mastery-weighted selection stable for the same seed key and mastery snapshot', () => {
+    const candidates = [
+      {
+        trackId: 'exam3',
+        masteredUnits: 2,
+        totalUnits: 10,
+      },
+      {
+        trackId: 'final',
+        masteredUnits: 8,
+        totalUnits: 10,
+      },
+      {
+        trackId: 'exam2',
+        masteredUnits: 4,
+        totalUnits: 10,
+      },
+    ] as const
+
+    const first = pickMasteryWeightedTrack(candidates, {
+      seedKey: '2026-04-22',
+    })
+    const second = pickMasteryWeightedTrack(candidates, {
+      seedKey: '2026-04-22',
+    })
+    const shifted = pickMasteryWeightedTrack(candidates, {
+      seedKey: '2026-04-23',
+    })
+
+    expect(first).not.toBeNull()
+    expect(first?.trackId).toBe(second?.trackId)
+    expect(first?.totalWeight).toBe(second?.totalWeight)
+    expect(['exam3', 'final', 'exam2']).toContain(shifted?.trackId)
   })
 
   it('demotes a past-due phase to catch-up when a later incomplete phase exists', () => {
