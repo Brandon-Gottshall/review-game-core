@@ -1,5 +1,6 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { cx } from './utils.js';
 export function IdentityFloat({ currentEmail, message, placeholder = 'you@valdosta.edu', description = 'Attach one email so your theme and progress follow you across review games.', saveLabel = 'Save email', updateLabel = 'Update email', anonymousLabel = 'Use anonymous mode', anonymousNote = 'Anonymous mode keeps your theme and progress on this browser only.', className, open, defaultOpen, onOpenChange, requireEmailConfirmation = true, onConfirmEmail, emailConfirmed, onSave, onGoAnonymous, }) {
@@ -125,23 +126,23 @@ export function IdentityFloat({ currentEmail, message, placeholder = 'you@valdos
             // Consumers surface the visible error state via `message`.
         }
     };
-    return (_jsxs("div", { ref: containerRef, className: cx('rg-card rg-identity-float', className), "aria-label": "Learner association", children: [_jsxs("button", { ref: triggerRef, type: "button", className: cx('rg-identity-float__toggle', !currentEmail && 'is-anonymous'), "aria-expanded": resolvedOpen, "aria-label": `Learner: ${triggerStatus}. ${resolvedOpen ? 'Close' : 'Open'} learner association.`, onClick: () => setOpen(!resolvedOpen), children: [_jsx("span", { className: "rg-identity-float__icon", "aria-hidden": "true", children: "\u2709" }), _jsx("span", { children: triggerStatus })] }), message ? _jsx("p", { className: "rg-note", role: "status", children: message }) : null, resolvedOpen ? (_jsxs("form", { className: "rg-identity-float__panel", onSubmit: handleSubmit, noValidate: true, children: [_jsx("p", { className: "rg-kicker", children: "Learner association" }), _jsx("p", { className: "rg-note", children: description }), confirmationPending && pendingEmail ? (_jsxs(_Fragment, { children: [_jsxs("div", { className: "rg-identity-float__confirm", role: "group", "aria-label": "Confirm saved email", children: [_jsxs("p", { className: "rg-note", children: ["Is ", pendingEmail, " correct?"] }), _jsxs("div", { className: "rg-button-row", children: [_jsx("button", { ref: confirmButtonRef, type: "button", className: "rg-button rg-button--primary", onClick: () => void handleConfirmEmail(), children: "Yes, save" }), _jsx("button", { type: "button", className: "rg-button rg-button--secondary", onClick: () => {
-                                                    const currentPendingEmail = pendingEmail;
-                                                    setDraftEmail(currentPendingEmail);
-                                                    requestAnimationFrame(() => {
-                                                        const input = containerRef.current?.querySelector('input[name=\"email\"]');
-                                                        input?.focus();
-                                                    });
-                                                }, children: "Edit" })] })] }), _jsxs("p", { role: "status", "aria-live": "polite", style: {
-                                    position: 'absolute',
-                                    width: '1px',
-                                    height: '1px',
-                                    padding: 0,
-                                    margin: '-1px',
-                                    overflow: 'hidden',
-                                    clip: 'rect(0, 0, 0, 0)',
-                                    whiteSpace: 'nowrap',
-                                    border: 0,
-                                }, children: ["Saved ", pendingEmail, ". Confirm it's correct."] })] })) : null, _jsx("input", { className: "rg-input", type: "email", name: "email", autoComplete: "email", value: draftEmail, onChange: (event) => setDraftEmail(event.target.value), placeholder: placeholder, "aria-label": "Learner email" }), _jsxs("div", { className: "rg-button-row", children: [_jsx("button", { type: "submit", className: "rg-button rg-button--primary", disabled: !canSubmit, children: primaryLabel }), _jsx("button", { type: "button", className: "rg-button rg-button--secondary", onClick: () => void onGoAnonymous(), children: anonymousLabel })] }), _jsx("p", { className: "rg-note", children: currentEmail ? `Active learner: ${currentEmail}` : anonymousNote })] })) : null] }));
+    return (_jsxs(motion.div, { ref: containerRef, layout: true, transition: { type: 'spring', stiffness: 420, damping: 36 }, className: cx('rg-card rg-identity-float', !resolvedOpen && 'is-collapsed', className), "aria-label": "Learner association", children: [_jsxs(motion.button, { layout: true, ref: triggerRef, type: "button", className: cx('rg-identity-float__toggle', !currentEmail && 'is-anonymous'), "aria-expanded": resolvedOpen, "aria-label": `Learner: ${triggerStatus}. ${resolvedOpen ? 'Close' : 'Open'} learner association.`, onClick: () => setOpen(!resolvedOpen), children: [_jsx("span", { className: "rg-identity-float__icon", "aria-hidden": "true", children: "\u2709" }), resolvedOpen ? _jsx("span", { children: triggerStatus }) : null] }), message && resolvedOpen ? _jsx("p", { className: "rg-note", role: "status", children: message }) : null, _jsx(AnimatePresence, { initial: false, children: resolvedOpen ? (_jsxs(motion.form, { layout: true, initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 }, className: "rg-identity-float__panel", onSubmit: handleSubmit, noValidate: true, children: [_jsx("p", { className: "rg-kicker", children: "Learner association" }), _jsx("p", { className: "rg-note", children: description }), confirmationPending && pendingEmail ? (_jsxs(_Fragment, { children: [_jsxs("div", { className: "rg-identity-float__confirm", role: "group", "aria-label": "Confirm saved email", children: [_jsxs("p", { className: "rg-note", children: ["Is ", pendingEmail, " correct?"] }), _jsxs("div", { className: "rg-button-row", children: [_jsx("button", { ref: confirmButtonRef, type: "button", className: "rg-button rg-button--primary", onClick: () => void handleConfirmEmail(), children: "Yes, save" }), _jsx("button", { type: "button", className: "rg-button rg-button--secondary", onClick: () => {
+                                                        const currentPendingEmail = pendingEmail;
+                                                        setDraftEmail(currentPendingEmail);
+                                                        requestAnimationFrame(() => {
+                                                            const input = containerRef.current?.querySelector('input[name=\"email\"]');
+                                                            input?.focus();
+                                                        });
+                                                    }, children: "Edit" })] })] }), _jsxs("p", { role: "status", "aria-live": "polite", style: {
+                                        position: 'absolute',
+                                        width: '1px',
+                                        height: '1px',
+                                        padding: 0,
+                                        margin: '-1px',
+                                        overflow: 'hidden',
+                                        clip: 'rect(0, 0, 0, 0)',
+                                        whiteSpace: 'nowrap',
+                                        border: 0,
+                                    }, children: ["Saved ", pendingEmail, ". Confirm it's correct."] })] })) : null, _jsx("input", { className: "rg-input", type: "email", name: "email", autoComplete: "email", value: draftEmail, onChange: (event) => setDraftEmail(event.target.value), placeholder: placeholder, "aria-label": "Learner email" }), _jsxs("div", { className: "rg-button-row", children: [_jsx("button", { type: "submit", className: "rg-button rg-button--primary", disabled: !canSubmit, children: primaryLabel }), _jsx("button", { type: "button", className: "rg-button rg-button--secondary", onClick: () => void onGoAnonymous(), children: anonymousLabel })] }), _jsx("p", { className: "rg-note", children: currentEmail ? `Active learner: ${currentEmail}` : anonymousNote })] }, "panel")) : null })] }));
 }
 //# sourceMappingURL=identity-float.js.map

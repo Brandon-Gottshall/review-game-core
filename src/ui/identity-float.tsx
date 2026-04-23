@@ -1,5 +1,6 @@
 'use client'
 
+import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 
 import { cx } from './utils.js'
@@ -172,12 +173,15 @@ export function IdentityFloat({
   }
 
   return (
-    <div
+    <motion.div
       ref={containerRef}
-      className={cx('rg-card rg-identity-float', className)}
+      layout
+      transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+      className={cx('rg-card rg-identity-float', !resolvedOpen && 'is-collapsed', className)}
       aria-label="Learner association"
     >
-      <button
+      <motion.button
+        layout
         ref={triggerRef}
         type="button"
         className={cx('rg-identity-float__toggle', !currentEmail && 'is-anonymous')}
@@ -186,13 +190,24 @@ export function IdentityFloat({
         onClick={() => setOpen(!resolvedOpen)}
       >
         <span className="rg-identity-float__icon" aria-hidden="true">✉</span>
-        <span>{triggerStatus}</span>
-      </button>
+        {resolvedOpen ? <span>{triggerStatus}</span> : null}
+      </motion.button>
 
-      {message ? <p className="rg-note" role="status">{message}</p> : null}
+      {message && resolvedOpen ? <p className="rg-note" role="status">{message}</p> : null}
 
+      <AnimatePresence initial={false}>
       {resolvedOpen ? (
-        <form className="rg-identity-float__panel" onSubmit={handleSubmit} noValidate>
+        <motion.form
+          layout
+          key="panel"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="rg-identity-float__panel"
+          onSubmit={handleSubmit}
+          noValidate
+        >
           <p className="rg-kicker">Learner association</p>
           <p className="rg-note">{description}</p>
           {confirmationPending && pendingEmail ? (
@@ -272,8 +287,9 @@ export function IdentityFloat({
           <p className="rg-note">
             {currentEmail ? `Active learner: ${currentEmail}` : anonymousNote}
           </p>
-        </form>
+        </motion.form>
       ) : null}
-    </div>
+      </AnimatePresence>
+    </motion.div>
   )
 }

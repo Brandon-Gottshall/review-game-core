@@ -211,6 +211,36 @@ h6 {
   padding: 1rem;
 }
 
+.rg-theme-switcher.is-collapsed,
+.rg-identity-float.is-collapsed {
+  padding: 0;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.rg-theme-switcher.is-collapsed .rg-theme-switcher__trigger,
+.rg-identity-float.is-collapsed .rg-identity-float__toggle {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border-radius: 999px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.rg-theme-switcher__icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.rg-identity-float.is-collapsed .rg-identity-float__icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  background: transparent;
+}
+
 .rg-theme-switcher__trigger,
 .rg-session-progress__toggle,
 .rg-identity-float__toggle,

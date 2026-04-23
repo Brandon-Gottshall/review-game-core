@@ -1,5 +1,6 @@
 'use client';
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { DEFAULT_THEME_ID, REGISTERED_THEMES, applyThemePreferenceToDocument, mergeThemePreference, resolveThemePreference, } from '../theme/index.js';
 import { cx } from './utils.js';
@@ -111,39 +112,40 @@ export function ThemeSwitcher({ preference, registeredThemes = REGISTERED_THEMES
     }, [resolvedOpen]);
     const showThemeFamily = registeredThemes.length > 1;
     const triggerLabel = themeButtonLabel(draft, registeredThemes);
-    return (_jsxs("div", { ref: containerRef, className: cx('rg-card rg-theme-switcher', className), children: [_jsxs("button", { ref: triggerRef, type: "button", className: "rg-theme-switcher__trigger", "aria-expanded": resolvedOpen, "aria-haspopup": "dialog", "aria-controls": panelId, "aria-label": `Theme: ${triggerLabel}. ${resolvedOpen ? 'Close' : 'Open'} picker.`, onClick: () => setOpen(!resolvedOpen), children: [_jsx("span", { className: "rg-kicker", children: "Theme" }), _jsx("span", { className: "rg-theme-switcher__value", children: triggerLabel })] }), resolvedOpen ? (_jsxs("div", { id: panelId, className: "rg-theme-switcher__panel", role: "dialog", "aria-label": "Theme switcher", children: [showThemeFamily ? (() => {
-                        const familySelectedIndex = Math.max(0, registeredThemes.findIndex((theme) => theme.id === draft.themeId));
-                        const selectFamily = (nextIndex) => {
-                            const target = registeredThemes[nextIndex];
-                            if (!target)
-                                return;
-                            persist({
-                                ...draft,
-                                themeId: target.id ?? DEFAULT_THEME_ID,
-                                updatedAt: new Date().toISOString(),
-                            });
-                        };
-                        return (_jsxs("div", { className: "rg-theme-switcher__section", children: [_jsx("p", { className: "rg-kicker", id: familyLabelId, children: "Theme family" }), _jsx("div", { className: "rg-theme-switcher__options", role: "radiogroup", "aria-labelledby": familyLabelId, children: registeredThemes.map((theme, index) => {
-                                        const selected = index === familySelectedIndex;
-                                        return (_jsx("button", { type: "button", role: "radio", "aria-checked": selected, tabIndex: selected ? 0 : -1, className: cx('rg-chip', selected && 'is-selected'), onClick: () => selectFamily(index), onKeyDown: (event) => handleRadioGroupKeyDown(event, registeredThemes.length, index, selectFamily), children: theme.label }, theme.id));
-                                    }) })] }));
-                    })() : null, (() => {
-                        const schemeSelectedIndex = Math.max(0, COLOR_SCHEMES.findIndex((entry) => entry.id === draft.colorScheme));
-                        const selectScheme = (nextIndex) => {
-                            const target = COLOR_SCHEMES[nextIndex];
-                            if (!target)
-                                return;
-                            persist({
-                                ...draft,
-                                colorScheme: target.id,
-                                updatedAt: new Date().toISOString(),
-                            });
-                        };
-                        return (_jsxs("div", { className: "rg-theme-switcher__section", children: [_jsx("p", { className: "rg-kicker", id: schemeLabelId, children: "Color scheme" }), _jsx("div", { className: "rg-theme-switcher__options", role: "radiogroup", "aria-labelledby": schemeLabelId, children: COLOR_SCHEMES.map(({ id, label }, index) => {
-                                        const selected = index === schemeSelectedIndex;
-                                        return (_jsx("button", { type: "button", role: "radio", "aria-checked": selected, tabIndex: selected ? 0 : -1, className: cx('rg-chip', selected && 'is-selected'), onClick: () => selectScheme(index), onKeyDown: (event) => handleRadioGroupKeyDown(event, COLOR_SCHEMES.length, index, selectScheme), children: label }, id));
-                                    }) })] }));
-                    })(), anonymous ? (_jsx("p", { className: "rg-note", children: "You're browsing as anonymous. Attach an email to keep this theme everywhere." })) : currentEmail ? (_jsxs("p", { className: "rg-note", children: ["Theme is tied to ", currentEmail, "."] })) : null, statusMessage ? _jsx("p", { className: "rg-note", role: "status", children: statusMessage }) : null] })) : null] }));
+    const schemeIcon = draft.colorScheme === 'dark' ? '☾' : draft.colorScheme === 'light' ? '☀' : '◐';
+    return (_jsxs(motion.div, { ref: containerRef, layout: true, transition: { type: 'spring', stiffness: 420, damping: 36 }, className: cx('rg-card rg-theme-switcher', !resolvedOpen && 'is-collapsed', className), children: [_jsx(motion.button, { layout: true, ref: triggerRef, type: "button", className: "rg-theme-switcher__trigger", "aria-expanded": resolvedOpen, "aria-haspopup": "dialog", "aria-controls": panelId, "aria-label": `Theme: ${triggerLabel}. ${resolvedOpen ? 'Close' : 'Open'} picker.`, onClick: () => setOpen(!resolvedOpen), children: resolvedOpen ? (_jsxs(_Fragment, { children: [_jsx("span", { className: "rg-kicker", children: "Theme" }), _jsx("span", { className: "rg-theme-switcher__value", children: triggerLabel })] })) : (_jsx("span", { className: "rg-theme-switcher__icon", "aria-hidden": "true", children: schemeIcon })) }), _jsx(AnimatePresence, { initial: false, children: resolvedOpen ? (_jsxs(motion.div, { layout: true, initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 }, id: panelId, className: "rg-theme-switcher__panel", role: "dialog", "aria-label": "Theme switcher", children: [showThemeFamily ? (() => {
+                            const familySelectedIndex = Math.max(0, registeredThemes.findIndex((theme) => theme.id === draft.themeId));
+                            const selectFamily = (nextIndex) => {
+                                const target = registeredThemes[nextIndex];
+                                if (!target)
+                                    return;
+                                persist({
+                                    ...draft,
+                                    themeId: target.id ?? DEFAULT_THEME_ID,
+                                    updatedAt: new Date().toISOString(),
+                                });
+                            };
+                            return (_jsxs("div", { className: "rg-theme-switcher__section", children: [_jsx("p", { className: "rg-kicker", id: familyLabelId, children: "Theme family" }), _jsx("div", { className: "rg-theme-switcher__options", role: "radiogroup", "aria-labelledby": familyLabelId, children: registeredThemes.map((theme, index) => {
+                                            const selected = index === familySelectedIndex;
+                                            return (_jsx("button", { type: "button", role: "radio", "aria-checked": selected, tabIndex: selected ? 0 : -1, className: cx('rg-chip', selected && 'is-selected'), onClick: () => selectFamily(index), onKeyDown: (event) => handleRadioGroupKeyDown(event, registeredThemes.length, index, selectFamily), children: theme.label }, theme.id));
+                                        }) })] }));
+                        })() : null, (() => {
+                            const schemeSelectedIndex = Math.max(0, COLOR_SCHEMES.findIndex((entry) => entry.id === draft.colorScheme));
+                            const selectScheme = (nextIndex) => {
+                                const target = COLOR_SCHEMES[nextIndex];
+                                if (!target)
+                                    return;
+                                persist({
+                                    ...draft,
+                                    colorScheme: target.id,
+                                    updatedAt: new Date().toISOString(),
+                                });
+                            };
+                            return (_jsxs("div", { className: "rg-theme-switcher__section", children: [_jsx("p", { className: "rg-kicker", id: schemeLabelId, children: "Color scheme" }), _jsx("div", { className: "rg-theme-switcher__options", role: "radiogroup", "aria-labelledby": schemeLabelId, children: COLOR_SCHEMES.map(({ id, label }, index) => {
+                                            const selected = index === schemeSelectedIndex;
+                                            return (_jsx("button", { type: "button", role: "radio", "aria-checked": selected, tabIndex: selected ? 0 : -1, className: cx('rg-chip', selected && 'is-selected'), onClick: () => selectScheme(index), onKeyDown: (event) => handleRadioGroupKeyDown(event, COLOR_SCHEMES.length, index, selectScheme), children: label }, id));
+                                        }) })] }));
+                        })(), anonymous ? (_jsx("p", { className: "rg-note", children: "You're browsing as anonymous. Attach an email to keep this theme everywhere." })) : currentEmail ? (_jsxs("p", { className: "rg-note", children: ["Theme is tied to ", currentEmail, "."] })) : null, statusMessage ? _jsx("p", { className: "rg-note", role: "status", children: statusMessage }) : null] }, "panel")) : null })] }));
 }
 export const buildNextThemePreference = (current, next, gameId) => mergeThemePreference(current, next, gameId);
 //# sourceMappingURL=theme-switcher.js.map

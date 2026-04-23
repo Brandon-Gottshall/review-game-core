@@ -1,5 +1,6 @@
 'use client'
 
+import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 
 import {
@@ -172,10 +173,17 @@ export function ThemeSwitcher({
 
   const showThemeFamily = registeredThemes.length > 1
   const triggerLabel = themeButtonLabel(draft, registeredThemes)
+  const schemeIcon = draft.colorScheme === 'dark' ? '☾' : draft.colorScheme === 'light' ? '☀' : '◐'
 
   return (
-    <div ref={containerRef} className={cx('rg-card rg-theme-switcher', className)}>
-      <button
+    <motion.div
+      ref={containerRef}
+      layout
+      transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+      className={cx('rg-card rg-theme-switcher', !resolvedOpen && 'is-collapsed', className)}
+    >
+      <motion.button
+        layout
         ref={triggerRef}
         type="button"
         className="rg-theme-switcher__trigger"
@@ -185,12 +193,25 @@ export function ThemeSwitcher({
         aria-label={`Theme: ${triggerLabel}. ${resolvedOpen ? 'Close' : 'Open'} picker.`}
         onClick={() => setOpen(!resolvedOpen)}
       >
-        <span className="rg-kicker">Theme</span>
-        <span className="rg-theme-switcher__value">{triggerLabel}</span>
-      </button>
+        {resolvedOpen ? (
+          <>
+            <span className="rg-kicker">Theme</span>
+            <span className="rg-theme-switcher__value">{triggerLabel}</span>
+          </>
+        ) : (
+          <span className="rg-theme-switcher__icon" aria-hidden="true">{schemeIcon}</span>
+        )}
+      </motion.button>
 
+      <AnimatePresence initial={false}>
       {resolvedOpen ? (
-        <div
+        <motion.div
+          layout
+          key="panel"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
           id={panelId}
           className="rg-theme-switcher__panel"
           role="dialog"
@@ -303,9 +324,10 @@ export function ThemeSwitcher({
           ) : null}
 
           {statusMessage ? <p className="rg-note" role="status">{statusMessage}</p> : null}
-        </div>
+        </motion.div>
       ) : null}
-    </div>
+      </AnimatePresence>
+    </motion.div>
   )
 }
 
