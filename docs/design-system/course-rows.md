@@ -67,7 +67,7 @@ type ExamRowProps = {
 }
 ```
 
-Collapsed: toggle (caret + title + "N% ready · M/T sections mastered" meta + optional deadline chip).
+Collapsed: toggle (caret + title + "readiness signal N/100 · M/T sections mastered" meta + optional deadline chip).
 Expanded: optional `renderExamAction` slot, then a list of `<SectionRow>` children with `data-rg-rowlist="true"` on the list wrapper (enables keyboard navigation inside the exam).
 
 ### `<CourseHierarchyRows>`
@@ -150,7 +150,7 @@ Per-row landmark noise is intentional: `<article>` for exams (standalone readabl
 
 ## 7. Copy rules
 
-- Exam meta (collapsed): `"{N}% ready · {M}/{T} sections mastered"` — preset copy; do not localize per app.
+- Exam meta (collapsed): `"readiness signal {N}/100 · {M}/{T} sections mastered"` — preset copy; do not localize per app.
 - Section meta (collapsed): `"{M}/{T} topics mastered"` — same.
 - Deadline chip (when available): formatted via `formatIsoDate` + `formatRelativeDay`.
 - Topic meta: `PHASE_STATE_LABELS[state]`.

@@ -1,6 +1,3 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { inspect, isDeepStrictEqual } from 'node:util';
 import { applyConceptOutcome, applySupplementalConceptExposure, buildInitialConceptSchedule, createSchedulerPolicy, mergeConceptSchedule, pickNextConceptId, } from '../scheduler/index.js';
 export const WF_GROUP_NAMES = {
     1: 'Question type coverage',
@@ -10,6 +7,7 @@ export const WF_GROUP_NAMES = {
     5: 'Concept consistency',
     6: 'Generator determinism',
     7: 'Scheduler coverage',
+    8: 'Question quality',
 };
 export const WF_SAMPLE_SEEDS = [1, 42, 100, 2024, 99999];
 function escapeRegExp(text) {
@@ -17,6 +15,24 @@ function escapeRegExp(text) {
 }
 function defaultRenderPatternFor(type) {
     return new RegExp(`currentQuestion\\.type\\s*===\\s*['"]${escapeRegExp(type)}['"]`);
+}
+function formatDiagnostic(value) {
+    if (typeof value === 'string')
+        return value;
+    try {
+        return JSON.stringify(value);
+    }
+    catch {
+        return String(value);
+    }
+}
+function isDeepStrictEqual(actual, expected) {
+    try {
+        return JSON.stringify(actual) === JSON.stringify(expected);
+    }
+    catch {
+        return Object.is(actual, expected);
+    }
 }
 function createResult(group, name, failures, options) {
     return {
@@ -47,8 +63,35 @@ function isNonEmpty(value) {
         return true;
     return Boolean(value);
 }
+function normalizeVisibleText(value) {
+    if (Array.isArray(value))
+        return value.join('\n');
+    return typeof value === 'string' ? value : '';
+}
+function collectQuestionQualityText(item, surfaces) {
+    const entries = Object.entries(item.visibleText)
+        .filter(([surface]) => !surfaces || surfaces.includes(surface));
+    return entries
+        .map(([surface, value]) => ({ surface, text: normalizeVisibleText(value) }))
+        .filter(({ text }) => text.trim().length > 0);
+}
+function normalizePredicateResult(result) {
+    if (!result)
+        return [];
+    return typeof result === 'string' ? [result] : [...result];
+}
+function getNodeBuiltinModule(specifier) {
+    const runtimeProcess = globalThis.process;
+    return runtimeProcess?.getBuiltinModule?.(specifier);
+}
 function readQuizClientSource(quizClientPath) {
-    return fs.readFileSync(path.resolve(process.cwd(), quizClientPath), 'utf8');
+    const fsModule = getNodeBuiltinModule('node:fs');
+    const pathModule = getNodeBuiltinModule('node:path');
+    const runtimeProcess = globalThis.process;
+    if (!fsModule?.readFileSync || !pathModule?.resolve || !runtimeProcess?.cwd) {
+        throw new Error('quizClientPath source reading requires a Node.js runtime; pass quizClientSource in browser bundles');
+    }
+    return fsModule.readFileSync(pathModule.resolve(runtimeProcess.cwd(), quizClientPath), 'utf8');
 }
 export function validateTypeCoverage(config) {
     const registered = new Set(config.registeredTypes);
@@ -63,14 +106,14 @@ export function validateTypeCoverage(config) {
     ];
 }
 export function validateRenderDispatch(config) {
-    if (!config.quizClientPath) {
+    if (!config.quizClientPath && config.quizClientSource == null) {
         return [
-            createResult(2, 'render dispatch validation is skipped when quizClientPath is omitted', []),
+            createResult(2, 'render dispatch validation is skipped when quizClientPath and quizClientSource are omitted', []),
         ];
     }
     let source;
     try {
-        source = readQuizClientSource(config.quizClientPath);
+        source = config.quizClientSource ?? readQuizClientSource(config.quizClientPath ?? '');
     }
     catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -306,7 +349,7 @@ export function validateSchedulerHarness(config) {
     const initialSchedule = buildInitialConceptSchedule(conceptIds, policy);
     const initialIds = Object.keys(initialSchedule);
     if (!isDeepStrictEqual(initialIds, conceptIds)) {
-        conceptSetFailures.push(`buildInitialConceptSchedule returned concept ids ${inspect(initialIds)} instead of ${inspect(conceptIds)}`);
+        conceptSetFailures.push(`buildInitialConceptSchedule returned concept ids ${formatDiagnostic(initialIds)} instead of ${formatDiagnostic(conceptIds)}`);
     }
     const mergedSchedule = mergeConceptSchedule(conceptIds, {
         __wf_harness_orphan__: {
@@ -315,7 +358,7 @@ export function validateSchedulerHarness(config) {
     }, policy);
     const mergedIds = Object.keys(mergedSchedule);
     if (!isDeepStrictEqual(mergedIds, conceptIds)) {
-        conceptSetFailures.push(`mergeConceptSchedule returned concept ids ${inspect(mergedIds)} instead of ${inspect(conceptIds)}`);
+        conceptSetFailures.push(`mergeConceptSchedule returned concept ids ${formatDiagnostic(mergedIds)} instead of ${formatDiagnostic(conceptIds)}`);
     }
     if ('__wf_harness_orphan__' in mergedSchedule) {
         conceptSetFailures.push('mergeConceptSchedule preserved an orphan stored concept');
@@ -332,7 +375,7 @@ export function validateSchedulerHarness(config) {
             }
             const actual = getByPath(conceptState, expectation.path);
             if (!isDeepStrictEqual(actual, expectation.expected)) {
-                transitionFailures.push(`${scenario.name}: ${expectation.conceptId}.${expectation.path} expected ${inspect(expectation.expected)} but found ${inspect(actual)}`);
+                transitionFailures.push(`${scenario.name}: ${expectation.conceptId}.${expectation.path} expected ${formatDiagnostic(expectation.expected)} but found ${formatDiagnostic(actual)}`);
             }
         }
     }
@@ -360,6 +403,43 @@ export function validateSchedulerHarness(config) {
         createResult(7, 'scheduler selection scenarios choose the expected concept', selectionFailures),
     ];
 }
+export function validateQuestionQuality(config) {
+    if (!config.questionQuality) {
+        return [
+            createResult(8, 'question quality validation is skipped when questionQuality config is omitted', []),
+        ];
+    }
+    const { items, rules } = config.questionQuality;
+    const configFailures = [];
+    if (items.length === 0) {
+        configFailures.push('questionQuality.items must include at least one item');
+    }
+    if (rules.length === 0) {
+        configFailures.push('questionQuality.rules must include at least one deterministic rule');
+    }
+    const ruleFailures = [];
+    for (const rule of rules) {
+        for (const item of items) {
+            if ('pattern' in rule) {
+                const surfaces = collectQuestionQualityText(item, rule.surfaces);
+                for (const { surface, text } of surfaces) {
+                    rule.pattern.lastIndex = 0;
+                    if (rule.pattern.test(text)) {
+                        ruleFailures.push(`${item.id}: ${rule.issueClass} from ${rule.id} on ${surface}${rule.message ? ` (${rule.message})` : ''}`);
+                    }
+                }
+                continue;
+            }
+            for (const message of normalizePredicateResult(rule.evaluate(item))) {
+                ruleFailures.push(`${item.id}: ${rule.issueClass} from ${rule.id}${message ? ` (${message})` : ''}`);
+            }
+        }
+    }
+    return [
+        createResult(8, 'question quality config includes items and deterministic rules', configFailures),
+        createResult(8, 'question quality items satisfy configured deterministic rules', ruleFailures),
+    ];
+}
 export function validateAll(config) {
     return [
         ...validateTypeCoverage(config),
@@ -369,6 +449,7 @@ export function validateAll(config) {
         ...validateConceptConsistency(config),
         ...validateGeneratorDeterminism(config),
         ...validateSchedulerHarness(config),
+        ...validateQuestionQuality(config),
     ];
 }
 export function groupValidationResults(results) {

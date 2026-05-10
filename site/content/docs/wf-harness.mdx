@@ -1,6 +1,6 @@
 ---
 title: WF Harness
-description: Static validation of question pools, render coverage, payload shape, concept consistency, generators, and scheduler scenarios.
+description: Static validation of question pools, render coverage, payload shape, concept consistency, generators, scheduler scenarios, and optional deterministic question-quality rules.
 section: Validation
 order: 0
 apiSurface: wf-harness
@@ -14,8 +14,9 @@ The canonical repo docs adjacent to this layer are:
 
 - [`docs/wf-contract.md`](../../../docs/wf-contract.md)
 - [`docs/per-question-wf-gating.md`](../../../docs/per-question-wf-gating.md)
+- [`docs/wf-kit.md`](../../../docs/wf-kit.md)
 
-It validates seven groups:
+It validates eight groups:
 
 1. question type coverage
 2. render dispatch coverage
@@ -24,6 +25,7 @@ It validates seven groups:
 5. concept consistency
 6. generator determinism
 7. scheduler coverage
+8. optional deterministic question-quality rules
 
 ## Why this matters
 
@@ -33,6 +35,7 @@ Consumer repos can catch static drift quickly:
 - renderer branches missing
 - payloads missing required keys
 - concept trees or generators drifting out of contract
+- configured question-quality rules catching disclosure, signal, helper, or distractor drift
 
 That lets browser time focus on:
 
@@ -41,6 +44,6 @@ That lets browser time focus on:
 - recovery paths
 - the visible framing of the learning loop
 
-Experimental or LLM-shaped question variants may need additional per-question gating even when deterministic harness checks pass.
+Experimental or LLM-shaped question variants may need additional per-question gating even when deterministic harness checks pass. The harness can run deterministic configured rules, but it is still regression infrastructure; low-context WF remains the discoverability and workflow-completion gate.
 
 Read the [WF feature page](/showcase/features/wf-harness) for the config surface and contract framing.

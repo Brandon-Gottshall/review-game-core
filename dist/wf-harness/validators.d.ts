@@ -43,6 +43,36 @@ export interface WFHarnessSchedulerConfig<TSubskill extends string = string> {
     transitionScenarios?: readonly SchedulerTransitionScenario<TSubskill>[];
     selectionScenarios?: readonly SchedulerSelectionScenario<TSubskill>[];
 }
+export type QuestionQualityIssueClass = 'context_leakage' | 'signal_failure' | 'structure_helper_leakage' | 'subskill_goal_conflation' | 'instruction_validator_divergence' | 'distractor_collapse';
+export type QuestionQualityVisibleText = Record<string, string | readonly string[] | null | undefined>;
+export interface QuestionQualityItem {
+    id: string;
+    conceptId: string;
+    stage?: string;
+    targetLayer?: string;
+    supportMode?: string;
+    visibleText: QuestionQualityVisibleText;
+    metadata?: Record<string, unknown>;
+}
+export type QuestionQualityPredicateResult = string | readonly string[] | false | null | undefined;
+export type QuestionQualityPatternRule = {
+    id: string;
+    issueClass: QuestionQualityIssueClass;
+    message?: string;
+    surfaces?: readonly string[];
+    pattern: RegExp;
+};
+export type QuestionQualityPredicateRule = {
+    id: string;
+    issueClass: QuestionQualityIssueClass;
+    message?: string;
+    evaluate: (item: QuestionQualityItem) => QuestionQualityPredicateResult;
+};
+export type QuestionQualityRule = QuestionQualityPatternRule | QuestionQualityPredicateRule;
+export interface WFHarnessQuestionQualityConfig {
+    items: readonly QuestionQualityItem[];
+    rules: readonly QuestionQualityRule[];
+}
 export interface WFHarnessConfig<TType extends string = string, TSubskill extends string = string> {
     registeredTypes: readonly TType[];
     renderInteractiveCases: readonly TType[];
@@ -51,8 +81,10 @@ export interface WFHarnessConfig<TType extends string = string, TSubskill extend
     conceptTree: readonly ConceptNode[];
     generators: readonly Generator<Question<TType>>[];
     quizClientPath?: string;
+    quizClientSource?: string;
     renderPatternFor?: (type: string) => RegExp;
     scheduler?: WFHarnessSchedulerConfig<TSubskill>;
+    questionQuality?: WFHarnessQuestionQualityConfig;
 }
 export interface ValidationResult {
     group: number;
@@ -73,6 +105,7 @@ export declare const WF_GROUP_NAMES: {
     readonly 5: "Concept consistency";
     readonly 6: "Generator determinism";
     readonly 7: "Scheduler coverage";
+    readonly 8: "Question quality";
 };
 export declare const WF_SAMPLE_SEEDS: readonly [1, 42, 100, 2024, 99999];
 export declare function validateTypeCoverage<TType extends string, TSubskill extends string = string>(config: WFHarnessConfig<TType, TSubskill>): ValidationResult[];
@@ -82,6 +115,7 @@ export declare function validateBoundaryCheck<TType extends string, TSubskill ex
 export declare function validateConceptConsistency<TType extends string, TSubskill extends string = string>(config: WFHarnessConfig<TType, TSubskill>): ValidationResult[];
 export declare function validateGeneratorDeterminism<TType extends string, TSubskill extends string = string>(config: WFHarnessConfig<TType, TSubskill>): ValidationResult[];
 export declare function validateSchedulerHarness<TType extends string, TSubskill extends string = string>(config: WFHarnessConfig<TType, TSubskill>): ValidationResult[];
+export declare function validateQuestionQuality<TType extends string, TSubskill extends string = string>(config: WFHarnessConfig<TType, TSubskill>): ValidationResult[];
 export declare function validateAll<TType extends string, TSubskill extends string = string>(config: WFHarnessConfig<TType, TSubskill>): ValidationResult[];
 export declare function groupValidationResults(results: readonly ValidationResult[]): ValidationGroup[];
 //# sourceMappingURL=validators.d.ts.map

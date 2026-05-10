@@ -65,6 +65,7 @@ Even though readiness is exposed as an integer, it should be treated as a coarse
 - Do not imply that `67` and `68` reflect a meaningful scientific distinction.
 - Do not rank or market tiny score deltas as precise improvement.
 - If a consumer renders the score as a percent, the surrounding copy should still frame it as readiness or progress, not certainty.
+- Shared UI should prefer `readiness signal` or `readiness score` phrasing over compact copy such as `N% ready`, because the latter is easily read as an exact mastery or pass-probability claim.
 - Broad bands, trend language, or phase/state language are usually more honest than highly exact phrasing.
 
 ## Approximate rollup honesty
