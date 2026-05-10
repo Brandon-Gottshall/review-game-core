@@ -132,5 +132,10 @@
     "url": "git+https://github.com/Brandon-Gottshall/review-game-core.git"
   },
   "license": "MIT",
-  "author": "Brandon Gottshall"
+  "author": "Brandon Gottshall",
+  "overrides": {
+    "next": {
+      "postcss": "8.5.14"
+    }
+  }
 }
