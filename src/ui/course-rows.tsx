@@ -209,7 +209,7 @@ export function ExamRow({
         <span aria-hidden="true">{expanded ? '▾' : '▸'}</span>
         <span className="rg-exam-row__title">{exam.label}</span>
         <span className="rg-exam-row__meta">
-          {readiness?.score ?? 0}% ready · {masteredSections}/{exam.sections.length} sections mastered
+          readiness signal {readiness?.score ?? 0}/100 · {masteredSections}/{exam.sections.length} sections mastered
         </span>
         {deadline ? <span className="rg-exam-row__deadline">{deadline}</span> : null}
       </button>

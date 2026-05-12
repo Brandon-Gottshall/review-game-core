@@ -46,6 +46,31 @@ export type ConceptStateBadge =
   | 'Retention due'
   | 'Recovery due'
 
+export type GuidedLearnerEvidence =
+  | 'none'
+  | 'supported'
+  | 'independent'
+  | 'mastered'
+  | 'retention_due'
+  | 'recovery_due'
+
+export interface GuidedConceptProgressSummary<TSubskill extends string = string> extends ConceptRepetitionPlan {
+  conceptId: string
+  badge: ConceptStateBadge
+  learnerEvidence: GuidedLearnerEvidence
+  learnerLabel: string
+  learnerReason: string
+  lightPassCount: number
+  hardPassCount: number
+  independentPassCount: number
+  supportedPassCount: number
+  recoveryLightRemaining: number
+  recoverySupportMode: RecoverySupportMode
+  retentionDue: boolean
+  mastered: boolean
+  preferredSubskills: TSubskill[]
+}
+
 export const LIGHT_REP_TARGET = 4
 export const HARD_REP_TARGET = 2
 export const HARD_ATTEMPT_LIMIT = 3
@@ -599,6 +624,75 @@ export function getConceptStateBadge<TSubskill extends string = string>(
   if (concept.independentPassCount > 0) return 'Independent'
   if (concept.supportedPassCount > 0 || concept.supplementalExposureCount > 0) return 'Supported'
   return 'Emerging'
+}
+
+export function summarizeGuidedConceptProgress<TSubskill extends string = string>(
+  concept: GuidedConceptProgressState<TSubskill> | undefined,
+  currentTurn: number,
+  options: {
+    policy?: SchedulerPolicy<TSubskill>
+    preferredSubskills?: readonly TSubskill[]
+  } = {}
+): GuidedConceptProgressSummary<TSubskill> | null {
+  if (!concept) return null
+
+  const plan = getConceptRepetitionPlan(concept)
+  const retentionDue = isRetentionDue(concept, currentTurn, options.policy)
+  const recoveryDue = isGuidedRecoveryDue(concept)
+  const badge = getConceptStateBadge(concept, currentTurn)
+  const preferredSubskills = [
+    ...(options.preferredSubskills ?? getPreferredSubskillsForConceptSelection(concept, currentTurn)),
+  ]
+
+  let learnerEvidence: GuidedLearnerEvidence = 'none'
+  if (recoveryDue) {
+    learnerEvidence = 'recovery_due'
+  } else if (retentionDue) {
+    learnerEvidence = 'retention_due'
+  } else if (concept.mastered) {
+    learnerEvidence = 'mastered'
+  } else if (concept.independentPassCount > 0) {
+    learnerEvidence = 'independent'
+  } else if (concept.supportedPassCount > 0 || concept.supplementalExposureCount > 0) {
+    learnerEvidence = 'supported'
+  }
+
+  const learnerLabel = (() => {
+    if (recoveryDue) return 'Recovery practice'
+    if (retentionDue) return 'Retention check'
+    if (concept.mastered) return 'Mastered'
+    if (plan.repPhase === 'hard') return 'Independent challenge'
+    if (concept.supportedPassCount > 0 || concept.supplementalExposureCount > 0) return 'Supported practice'
+    return 'Guided practice'
+  })()
+
+  const learnerReason = (() => {
+    if (recoveryDue) {
+      return `Complete ${concept.recoveryLightRemaining} lighter practice ${concept.recoveryLightRemaining === 1 ? 'step' : 'steps'} before the next hard challenge.`
+    }
+    if (retentionDue) return 'Revisit this concept to confirm it still holds after spacing.'
+    if (concept.mastered) return 'Independent evidence has met the mastery target.'
+    if (plan.repPhase === 'hard') return `Attempt independent challenge ${Math.max(1, plan.repIndex - LIGHT_REP_TARGET)} of ${HARD_REP_TARGET}.`
+    return `Complete guided step ${Math.min(plan.repIndex, LIGHT_REP_TARGET)} of ${LIGHT_REP_TARGET}.`
+  })()
+
+  return {
+    conceptId: concept.conceptId,
+    ...plan,
+    badge,
+    learnerEvidence,
+    learnerLabel,
+    learnerReason,
+    lightPassCount: concept.lightPassCount,
+    hardPassCount: concept.hardPassCount,
+    independentPassCount: concept.independentPassCount,
+    supportedPassCount: concept.supportedPassCount,
+    recoveryLightRemaining: concept.recoveryLightRemaining,
+    recoverySupportMode: concept.recoverySupportMode,
+    retentionDue,
+    mastered: concept.mastered,
+    preferredSubskills,
+  }
 }
 
 export function normalizeSelectionReason(reason?: string | null): ConceptSelectionReason {

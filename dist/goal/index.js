@@ -1,4 +1,6 @@
+import { mulberry32 } from '../generator/index.js';
 export const DEFAULT_GOAL_DEADLINE_BEHAVIOR = 'stay_primary_until_complete';
+export const DEFAULT_MASTERY_WEIGHT_FLOOR = 0.15;
 const LOCAL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const ROLE_PRIORITY = {
     primary: 0,
@@ -6,6 +8,8 @@ const ROLE_PRIORITY = {
     queued: 2,
     complete: 3,
 };
+const FNV_OFFSET_BASIS = 2166136261;
+const FNV_PRIME = 16777619;
 const assertNonNegativeInteger = (value, label) => {
     if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
         throw new Error(`${label} must be a non-negative integer`);
@@ -93,6 +97,64 @@ const distinctTrackPriority = (phases) => {
     }
     return priority;
 };
+const hashSelectionSeed = (value) => {
+    let hash = FNV_OFFSET_BASIS;
+    for (let index = 0; index < value.length; index += 1) {
+        hash ^= value.charCodeAt(index);
+        hash = Math.imul(hash, FNV_PRIME);
+    }
+    return (hash >>> 0) || 1;
+};
+const roundSelectionMetric = (value) => Number(value.toFixed(4));
+const serializeTrackWeights = (candidates) => candidates
+    .map((candidate) => (`${candidate.trackId}:${candidate.masteredUnits}/${candidate.totalUnits}:${candidate.weight.toFixed(4)}`))
+    .join('|');
+export function buildMasteryWeightedTrackWeights(candidates, options = {}) {
+    const minimumWeight = Math.max(options.minimumWeight ?? DEFAULT_MASTERY_WEIGHT_FLOOR, 0);
+    return candidates.map((candidate) => {
+        const totalUnits = Math.max(Math.trunc(candidate.totalUnits), 0);
+        const masteredUnits = Math.min(Math.max(Math.trunc(candidate.masteredUnits), 0), totalUnits);
+        const masteryRatio = totalUnits <= 0 ? 0 : roundSelectionMetric(masteredUnits / totalUnits);
+        const masteryGap = totalUnits <= 0 ? 0 : roundSelectionMetric(1 - masteryRatio);
+        return {
+            trackId: candidate.trackId,
+            masteredUnits,
+            totalUnits,
+            masteryRatio,
+            masteryGap,
+            weight: totalUnits <= 0 ? 0 : roundSelectionMetric(Math.max(masteryGap, minimumWeight)),
+        };
+    });
+}
+export function pickMasteryWeightedTrack(candidates, options = {}) {
+    const weightedCandidates = buildMasteryWeightedTrackWeights(candidates, options);
+    const selectableCandidates = weightedCandidates.filter((candidate) => candidate.weight > 0);
+    if (selectableCandidates.length === 0) {
+        return null;
+    }
+    const totalWeight = selectableCandidates.reduce((total, candidate) => total + candidate.weight, 0);
+    const rng = options.random ?? mulberry32(hashSelectionSeed(`${options.seedKey ?? ''}::${serializeTrackWeights(selectableCandidates)}`));
+    const roll = rng() * totalWeight;
+    let cursor = 0;
+    for (const candidate of selectableCandidates) {
+        cursor += candidate.weight;
+        if (roll < cursor) {
+            return {
+                trackId: candidate.trackId,
+                totalWeight,
+                candidates: weightedCandidates,
+            };
+        }
+    }
+    const fallback = selectableCandidates.at(-1);
+    if (!fallback)
+        return null;
+    return {
+        trackId: fallback.trackId,
+        totalWeight,
+        candidates: weightedCandidates,
+    };
+}
 export function resolveGoalLocalDate(now = new Date(), timeZone = 'UTC') {
     const date = now instanceof Date ? now : new Date(now);
     if (Number.isNaN(date.getTime())) {

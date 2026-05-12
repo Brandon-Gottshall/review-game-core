@@ -11,6 +11,7 @@ import {
   getConceptRepetitionPlan,
   getConceptSelectionReason,
   getConceptStateBadge,
+  summarizeGuidedConceptProgress,
   getPreferredSubskillsForConceptSelection,
   getWeakestSubskills,
   isRetentionDue,
@@ -131,6 +132,66 @@ describe('getConceptRepetitionPlan', () => {
       hardAttemptLimit: HARD_ATTEMPT_LIMIT,
     });
     expect(getConceptRepetitionPlanFromRoot(alpha).hardAttemptLimit).toBe(ROOT_HARD_ATTEMPT_LIMIT);
+  });
+});
+
+describe('summarizeGuidedConceptProgress', () => {
+  it('returns learner-safe guided labels without proof-count wording', () => {
+    const concept = makeConcept('alpha', {
+      lightPassCount: 4,
+      hardPassCount: 1,
+      independentPassCount: 1,
+      supportedPassCount: 2,
+      nextEligibleTurn: 8,
+    });
+
+    const summary = summarizeGuidedConceptProgress(concept, 8, { policy });
+
+    expect(summary).toMatchObject({
+      conceptId: 'alpha',
+      repPhase: 'hard',
+      repIndex: 6,
+      learnerEvidence: 'independent',
+      learnerLabel: 'Independent challenge',
+      badge: 'Independent',
+      lightPassCount: 4,
+      hardPassCount: 1,
+      independentPassCount: 1,
+      supportedPassCount: 2,
+      retentionDue: false,
+      mastered: false,
+    });
+    expect(`${summary?.learnerLabel} ${summary?.learnerReason}`).not.toMatch(/proof/i);
+  });
+
+  it('surfaces recovery and retention states explicitly', () => {
+    const recoverySummary = summarizeGuidedConceptProgress(makeConcept('alpha', {
+      lightPassCount: 4,
+      hardPassCount: 1,
+      independentPassCount: 1,
+      recoveryDue: true,
+      recoveryLightRemaining: 2,
+      recoverySupportMode: 'same-concept-recovery',
+    }), 12, { policy });
+    const retentionSummary = summarizeGuidedConceptProgress(makeConcept('beta', {
+      independentPassCount: 3,
+      lightPassCount: 4,
+      hardPassCount: 2,
+      mastered: true,
+      retentionCheckEligibleTurn: 10,
+      retentionCheckPassed: false,
+    }), 12, { policy });
+
+    expect(recoverySummary).toMatchObject({
+      learnerEvidence: 'recovery_due',
+      learnerLabel: 'Recovery practice',
+      recoveryLightRemaining: 2,
+    });
+    expect(retentionSummary).toMatchObject({
+      learnerEvidence: 'retention_due',
+      learnerLabel: 'Retention check',
+      retentionDue: true,
+    });
   });
 });
 

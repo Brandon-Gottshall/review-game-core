@@ -1,7 +1,3 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { inspect, isDeepStrictEqual } from 'node:util';
-
 import type { ConceptNode } from '../concept/index.js';
 import type { Generator } from '../generator/index.js';
 import type { Question } from '../question/index.js';
@@ -67,6 +63,57 @@ export interface WFHarnessSchedulerConfig<TSubskill extends string = string> {
   selectionScenarios?: readonly SchedulerSelectionScenario<TSubskill>[];
 }
 
+export type QuestionQualityIssueClass =
+  | 'context_leakage'
+  | 'signal_failure'
+  | 'structure_helper_leakage'
+  | 'subskill_goal_conflation'
+  | 'instruction_validator_divergence'
+  | 'distractor_collapse';
+
+export type QuestionQualityVisibleText = Record<string, string | readonly string[] | null | undefined>;
+
+export interface QuestionQualityItem {
+  id: string;
+  conceptId: string;
+  stage?: string;
+  targetLayer?: string;
+  supportMode?: string;
+  visibleText: QuestionQualityVisibleText;
+  metadata?: Record<string, unknown>;
+}
+
+export type QuestionQualityPredicateResult =
+  | string
+  | readonly string[]
+  | false
+  | null
+  | undefined;
+
+export type QuestionQualityPatternRule = {
+  id: string;
+  issueClass: QuestionQualityIssueClass;
+  message?: string;
+  surfaces?: readonly string[];
+  pattern: RegExp;
+};
+
+export type QuestionQualityPredicateRule = {
+  id: string;
+  issueClass: QuestionQualityIssueClass;
+  message?: string;
+  evaluate: (item: QuestionQualityItem) => QuestionQualityPredicateResult;
+};
+
+export type QuestionQualityRule =
+  | QuestionQualityPatternRule
+  | QuestionQualityPredicateRule;
+
+export interface WFHarnessQuestionQualityConfig {
+  items: readonly QuestionQualityItem[];
+  rules: readonly QuestionQualityRule[];
+}
+
 export interface WFHarnessConfig<TType extends string = string, TSubskill extends string = string> {
   registeredTypes: readonly TType[];
   renderInteractiveCases: readonly TType[];
@@ -75,8 +122,10 @@ export interface WFHarnessConfig<TType extends string = string, TSubskill extend
   conceptTree: readonly ConceptNode[];
   generators: readonly Generator<Question<TType>>[];
   quizClientPath?: string;
+  quizClientSource?: string;
   renderPatternFor?: (type: string) => RegExp;
   scheduler?: WFHarnessSchedulerConfig<TSubskill>;
+  questionQuality?: WFHarnessQuestionQualityConfig;
 }
 
 export interface ValidationResult {
@@ -100,6 +149,7 @@ export const WF_GROUP_NAMES = {
   5: 'Concept consistency',
   6: 'Generator determinism',
   7: 'Scheduler coverage',
+  8: 'Question quality',
 } as const satisfies Record<number, string>;
 
 export const WF_SAMPLE_SEEDS = [1, 42, 100, 2024, 99999] as const;
@@ -110,6 +160,24 @@ function escapeRegExp(text: string): string {
 
 function defaultRenderPatternFor(type: string): RegExp {
   return new RegExp(`currentQuestion\\.type\\s*===\\s*['"]${escapeRegExp(type)}['"]`);
+}
+
+function formatDiagnostic(value: unknown): string {
+  if (typeof value === 'string') return value;
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function isDeepStrictEqual(actual: unknown, expected: unknown): boolean {
+  try {
+    return JSON.stringify(actual) === JSON.stringify(expected);
+  } catch {
+    return Object.is(actual, expected);
+  }
 }
 
 function createResult(
@@ -144,8 +212,55 @@ function isNonEmpty(value: unknown): boolean {
   return Boolean(value);
 }
 
+function normalizeVisibleText(value: string | readonly string[] | null | undefined): string {
+  if (Array.isArray(value)) return value.join('\n');
+  return typeof value === 'string' ? value : '';
+}
+
+function collectQuestionQualityText(
+  item: QuestionQualityItem,
+  surfaces?: readonly string[]
+): Array<{ surface: string; text: string }> {
+  const entries = Object.entries(item.visibleText)
+    .filter(([surface]) => !surfaces || surfaces.includes(surface));
+
+  return entries
+    .map(([surface, value]) => ({ surface, text: normalizeVisibleText(value) }))
+    .filter(({ text }) => text.trim().length > 0);
+}
+
+function normalizePredicateResult(result: QuestionQualityPredicateResult): string[] {
+  if (!result) return [];
+  return typeof result === 'string' ? [result] : [...result];
+}
+
+function getNodeBuiltinModule(specifier: string): unknown {
+  const runtimeProcess = (globalThis as {
+    process?: {
+      getBuiltinModule?: (id: string) => unknown;
+    };
+  }).process;
+  return runtimeProcess?.getBuiltinModule?.(specifier);
+}
+
 function readQuizClientSource(quizClientPath: string): string {
-  return fs.readFileSync(path.resolve(process.cwd(), quizClientPath), 'utf8');
+  const fsModule = getNodeBuiltinModule('node:fs') as {
+    readFileSync?: (filePath: string, encoding: BufferEncoding) => string;
+  } | undefined;
+  const pathModule = getNodeBuiltinModule('node:path') as {
+    resolve?: (...segments: string[]) => string;
+  } | undefined;
+  const runtimeProcess = (globalThis as {
+    process?: {
+      cwd?: () => string;
+    };
+  }).process;
+
+  if (!fsModule?.readFileSync || !pathModule?.resolve || !runtimeProcess?.cwd) {
+    throw new Error('quizClientPath source reading requires a Node.js runtime; pass quizClientSource in browser bundles');
+  }
+
+  return fsModule.readFileSync(pathModule.resolve(runtimeProcess.cwd(), quizClientPath), 'utf8');
 }
 
 export function validateTypeCoverage<TType extends string, TSubskill extends string = string>(
@@ -181,11 +296,11 @@ export function validateTypeCoverage<TType extends string, TSubskill extends str
 export function validateRenderDispatch<TType extends string, TSubskill extends string = string>(
   config: WFHarnessConfig<TType, TSubskill>
 ): ValidationResult[] {
-  if (!config.quizClientPath) {
+  if (!config.quizClientPath && config.quizClientSource == null) {
     return [
       createResult(
         2,
-        'render dispatch validation is skipped when quizClientPath is omitted',
+        'render dispatch validation is skipped when quizClientPath and quizClientSource are omitted',
         [],
       ),
     ];
@@ -193,7 +308,7 @@ export function validateRenderDispatch<TType extends string, TSubskill extends s
 
   let source: string;
   try {
-    source = readQuizClientSource(config.quizClientPath);
+    source = config.quizClientSource ?? readQuizClientSource(config.quizClientPath ?? '');
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return [
@@ -572,7 +687,7 @@ export function validateSchedulerHarness<TType extends string, TSubskill extends
   const initialIds = Object.keys(initialSchedule);
   if (!isDeepStrictEqual(initialIds, conceptIds)) {
     conceptSetFailures.push(
-      `buildInitialConceptSchedule returned concept ids ${inspect(initialIds)} instead of ${inspect(conceptIds)}`
+      `buildInitialConceptSchedule returned concept ids ${formatDiagnostic(initialIds)} instead of ${formatDiagnostic(conceptIds)}`
     );
   }
 
@@ -584,7 +699,7 @@ export function validateSchedulerHarness<TType extends string, TSubskill extends
   const mergedIds = Object.keys(mergedSchedule);
   if (!isDeepStrictEqual(mergedIds, conceptIds)) {
     conceptSetFailures.push(
-      `mergeConceptSchedule returned concept ids ${inspect(mergedIds)} instead of ${inspect(conceptIds)}`
+      `mergeConceptSchedule returned concept ids ${formatDiagnostic(mergedIds)} instead of ${formatDiagnostic(conceptIds)}`
     );
   }
   if ('__wf_harness_orphan__' in mergedSchedule) {
@@ -614,7 +729,7 @@ export function validateSchedulerHarness<TType extends string, TSubskill extends
       const actual = getByPath(conceptState, expectation.path);
       if (!isDeepStrictEqual(actual, expectation.expected)) {
         transitionFailures.push(
-          `${scenario.name}: ${expectation.conceptId}.${expectation.path} expected ${inspect(expectation.expected)} but found ${inspect(actual)}`
+          `${scenario.name}: ${expectation.conceptId}.${expectation.path} expected ${formatDiagnostic(expectation.expected)} but found ${formatDiagnostic(actual)}`
         );
       }
     }
@@ -669,6 +784,58 @@ export function validateSchedulerHarness<TType extends string, TSubskill extends
   ];
 }
 
+export function validateQuestionQuality<TType extends string, TSubskill extends string = string>(
+  config: WFHarnessConfig<TType, TSubskill>
+): ValidationResult[] {
+  if (!config.questionQuality) {
+    return [
+      createResult(
+        8,
+        'question quality validation is skipped when questionQuality config is omitted',
+        []
+      ),
+    ];
+  }
+
+  const { items, rules } = config.questionQuality;
+  const configFailures: string[] = [];
+  if (items.length === 0) {
+    configFailures.push('questionQuality.items must include at least one item');
+  }
+  if (rules.length === 0) {
+    configFailures.push('questionQuality.rules must include at least one deterministic rule');
+  }
+
+  const ruleFailures: string[] = [];
+  for (const rule of rules) {
+    for (const item of items) {
+      if ('pattern' in rule) {
+        const surfaces = collectQuestionQualityText(item, rule.surfaces);
+        for (const { surface, text } of surfaces) {
+          rule.pattern.lastIndex = 0;
+          if (rule.pattern.test(text)) {
+            ruleFailures.push(
+              `${item.id}: ${rule.issueClass} from ${rule.id} on ${surface}${rule.message ? ` (${rule.message})` : ''}`
+            );
+          }
+        }
+        continue;
+      }
+
+      for (const message of normalizePredicateResult(rule.evaluate(item))) {
+        ruleFailures.push(
+          `${item.id}: ${rule.issueClass} from ${rule.id}${message ? ` (${message})` : ''}`
+        );
+      }
+    }
+  }
+
+  return [
+    createResult(8, 'question quality config includes items and deterministic rules', configFailures),
+    createResult(8, 'question quality items satisfy configured deterministic rules', ruleFailures),
+  ];
+}
+
 export function validateAll<TType extends string, TSubskill extends string = string>(
   config: WFHarnessConfig<TType, TSubskill>
 ): ValidationResult[] {
@@ -680,6 +847,7 @@ export function validateAll<TType extends string, TSubskill extends string = str
     ...validateConceptConsistency(config),
     ...validateGeneratorDeterminism(config),
     ...validateSchedulerHarness(config),
+    ...validateQuestionQuality(config),
   ];
 }
 

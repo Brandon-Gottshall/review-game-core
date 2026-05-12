@@ -10,6 +10,7 @@ import {
   validateConceptConsistency,
   validateGeneratorDeterminism,
   validateInteractivePayloadShape,
+  validateQuestionQuality,
   validateSchedulerHarness,
   type WFHarnessConfig,
 } from '../src/wf-harness/validators.js';
@@ -185,11 +186,11 @@ function createBaseConfig(): WFHarnessConfig<ToyType, 'recognition' | 'structure
 }
 
 describe('validateAll', () => {
-  it('passes all 7 groups for a well-formed toy config', () => {
+  it('passes all 8 groups for a well-formed toy config', () => {
     const results = validateAll(createBaseConfig());
 
     expect(results.every(result => result.passed)).toBe(true);
-    expect(groupValidationResults(results).map(group => group.group)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(groupValidationResults(results).map(group => group.group)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     expect(groupValidationResults(results).map(group => group.name)).toEqual([
       WF_GROUP_NAMES[1],
       WF_GROUP_NAMES[2],
@@ -198,6 +199,7 @@ describe('validateAll', () => {
       WF_GROUP_NAMES[5],
       WF_GROUP_NAMES[6],
       WF_GROUP_NAMES[7],
+      WF_GROUP_NAMES[8],
     ]);
   });
 });
@@ -317,6 +319,82 @@ describe('validateSchedulerHarness', () => {
     expect(transitionResult?.passed).toBe(false);
     expect(transitionResult?.failures).toEqual([
       'wrong expectation: basics.independentPassCount expected 2 but found 1',
+    ]);
+  });
+});
+
+describe('validateQuestionQuality', () => {
+  it('flags configured visible-text leakage without hard-coding subject rules in core', () => {
+    const config = createBaseConfig();
+    config.questionQuality = {
+      items: [
+        {
+          id: 'q-leaky',
+          conceptId: 'loops',
+          stage: 'hard',
+          visibleText: {
+            prompt: 'Use loop invariant recognition to answer this.',
+            hint: 'The structure is already named in the prompt.',
+          },
+        },
+      ],
+      rules: [
+        {
+          id: 'no-named-target-in-hard-prompt',
+          issueClass: 'context_leakage',
+          surfaces: ['prompt'],
+          pattern: /loop invariant recognition/i,
+          message: 'hard prompts should not disclose the target concept',
+        },
+      ],
+    };
+
+    const results = validateQuestionQuality(config);
+    const ruleResult = results.find(result =>
+      result.name.includes('items satisfy configured')
+    );
+
+    expect(ruleResult?.passed).toBe(false);
+    expect(ruleResult?.failures).toEqual([
+      'q-leaky: context_leakage from no-named-target-in-hard-prompt on prompt (hard prompts should not disclose the target concept)',
+    ]);
+  });
+
+  it('accepts consumer-supplied predicate rules for non-regex quality checks', () => {
+    const config = createBaseConfig();
+    config.questionQuality = {
+      items: [
+        {
+          id: 'q-collapse',
+          conceptId: 'loops',
+          visibleText: {
+            choices: ['3', '3', '4'],
+          },
+        },
+      ],
+      rules: [
+        {
+          id: 'unique-distractors',
+          issueClass: 'distractor_collapse',
+          evaluate(item) {
+            const choices = item.visibleText.choices;
+            if (!Array.isArray(choices)) return 'choices are missing';
+            return new Set(choices).size === choices.length
+              ? false
+              : 'choices include duplicates';
+          },
+        },
+      ],
+    };
+
+    const results = validateQuestionQuality(config);
+    const ruleResult = results.find(result =>
+      result.name.includes('items satisfy configured')
+    );
+
+    expect(ruleResult?.passed).toBe(false);
+    expect(ruleResult?.failures).toEqual([
+      'q-collapse: distractor_collapse from unique-distractors (choices include duplicates)',
     ]);
   });
 });

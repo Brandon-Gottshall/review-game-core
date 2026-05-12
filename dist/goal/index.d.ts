@@ -45,7 +45,31 @@ export interface GoalPlanEvaluation<TTrackId extends string = string> {
     activePhase: GoalPhaseState<TTrackId> | null;
     trackPriority: TTrackId[];
 }
+export interface MasteryWeightedTrackCandidate<TTrackId extends string = string> {
+    trackId: TTrackId;
+    masteredUnits: number;
+    totalUnits: number;
+}
+export interface MasteryWeightedTrackWeight<TTrackId extends string = string> extends MasteryWeightedTrackCandidate<TTrackId> {
+    masteryRatio: number;
+    masteryGap: number;
+    weight: number;
+}
+export interface MasteryWeightedTrackSelection<TTrackId extends string = string> {
+    trackId: TTrackId;
+    totalWeight: number;
+    candidates: MasteryWeightedTrackWeight<TTrackId>[];
+}
 export declare const DEFAULT_GOAL_DEADLINE_BEHAVIOR: GoalDeadlineBehavior;
+export declare const DEFAULT_MASTERY_WEIGHT_FLOOR = 0.15;
+export declare function buildMasteryWeightedTrackWeights<TTrackId extends string>(candidates: readonly MasteryWeightedTrackCandidate<TTrackId>[], options?: {
+    minimumWeight?: number;
+}): MasteryWeightedTrackWeight<TTrackId>[];
+export declare function pickMasteryWeightedTrack<TTrackId extends string>(candidates: readonly MasteryWeightedTrackCandidate<TTrackId>[], options?: {
+    minimumWeight?: number;
+    random?: () => number;
+    seedKey?: string;
+}): MasteryWeightedTrackSelection<TTrackId> | null;
 export declare function resolveGoalLocalDate(now?: Date | number | string, timeZone?: string): string;
 export declare function evaluateGoalPlan<TTrackId extends string>(plan: GoalPlan<TTrackId>, snapshots: readonly GoalPhaseSnapshot<TTrackId>[], context?: GoalEvaluationContext): GoalPlanEvaluation<TTrackId>;
 export declare function buildGoalPhaseStates<TTrackId extends string>(plan: GoalPlan<TTrackId>, snapshots: readonly GoalPhaseSnapshot<TTrackId>[], context?: GoalEvaluationContext): GoalPhaseState<TTrackId>[];
