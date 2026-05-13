@@ -47,6 +47,14 @@ export interface QuizEngineAction<TQuestion extends QuizEngineQuestion = QuizEng
     outcome?: QuizEngineState<TQuestion>['lastOutcome'];
 }
 export declare function createQuizEngineState<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(snapshot?: Partial<QuizEngineState<TQuestion>>): QuizEngineState<TQuestion>;
+export type QuizEngineLastOutcome = QuizEngineState['lastOutcome'];
+export type QuizEngineSnapshot<TQuestion extends QuizEngineQuestion = QuizEngineQuestion> = Pick<QuizEngineState<TQuestion>, 'phase' | 'route' | 'currentConcept' | 'currentQuestionId' | 'stageIndex' | 'stageCount' | 'stagedAnswers' | 'supportCount' | 'recoveryCount' | 'completedQuestionIds' | 'lastOutcome' | 'complete'>;
+export declare function createQuizEngineSnapshot<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(state: QuizEngineState<TQuestion>): QuizEngineSnapshot<TQuestion>;
+export declare function restoreQuizEngineState<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(snapshot: Partial<QuizEngineSnapshot<TQuestion>> | null | undefined, options?: {
+    question?: TQuestion | null;
+    fallback?: Partial<QuizEngineState<TQuestion>>;
+    route?: string | null;
+}): QuizEngineState<TQuestion>;
 export declare function routeQuizEngine<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(state: QuizEngineState<TQuestion>, route: string, config?: Pick<QuizEngineConfig<TQuestion>, 'routeQuestionId' | 'questions' | 'stageCountForQuestion'>): QuizEngineState<TQuestion>;
 export declare function selectQuizQuestion<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(state: QuizEngineState<TQuestion>, question: TQuestion, config?: Pick<QuizEngineConfig<TQuestion>, 'stageCountForQuestion' | 'defaultStageCount'>): QuizEngineState<TQuestion>;
 export declare function advanceQuizStage<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(state: QuizEngineState<TQuestion>, answer: string, options?: {

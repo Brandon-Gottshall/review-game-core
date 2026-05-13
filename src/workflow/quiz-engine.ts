@@ -106,6 +106,139 @@ export function createQuizEngineState<TQuestion extends QuizEngineQuestion = Qui
   };
 }
 
+export type QuizEngineLastOutcome = QuizEngineState['lastOutcome'];
+
+export type QuizEngineSnapshot<TQuestion extends QuizEngineQuestion = QuizEngineQuestion> = Pick<
+  QuizEngineState<TQuestion>,
+  | 'phase'
+  | 'route'
+  | 'currentConcept'
+  | 'currentQuestionId'
+  | 'stageIndex'
+  | 'stageCount'
+  | 'stagedAnswers'
+  | 'supportCount'
+  | 'recoveryCount'
+  | 'completedQuestionIds'
+  | 'lastOutcome'
+  | 'complete'
+>;
+
+const QUIZ_ENGINE_PHASES = new Set<QuizEnginePhase>([
+  'routing',
+  'question',
+  'staged-answer',
+  'support',
+  'recovery',
+  'complete',
+]);
+
+const QUIZ_ENGINE_LAST_OUTCOMES = new Set<QuizEngineLastOutcome>([
+  'idle',
+  'routed',
+  'answered',
+  'supported',
+  'recovered',
+  'completed',
+  'reset',
+]);
+
+function readNonNegativeInteger(value: unknown, fallback: number): number {
+  return Number.isInteger(value) && Number(value) >= 0 ? Number(value) : fallback;
+}
+
+function readPositiveInteger(value: unknown, fallback: number): number {
+  return Number.isInteger(value) && Number(value) > 0 ? Number(value) : fallback;
+}
+
+function readStringList(value: unknown, fallback: readonly string[] = []): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : [...fallback];
+}
+
+function readNullableString(value: unknown, fallback: string | null = null): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
+}
+
+function readQuizEnginePhase(value: unknown, fallback: QuizEnginePhase): QuizEnginePhase {
+  return typeof value === 'string' && QUIZ_ENGINE_PHASES.has(value as QuizEnginePhase)
+    ? value as QuizEnginePhase
+    : fallback;
+}
+
+function readLastOutcome(value: unknown, fallback: QuizEngineLastOutcome): QuizEngineLastOutcome {
+  return typeof value === 'string' && QUIZ_ENGINE_LAST_OUTCOMES.has(value as QuizEngineLastOutcome)
+    ? value as QuizEngineLastOutcome
+    : fallback;
+}
+
+export function createQuizEngineSnapshot<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(
+  state: QuizEngineState<TQuestion>
+): QuizEngineSnapshot<TQuestion> {
+  return {
+    phase: state.phase,
+    route: state.route,
+    currentConcept: state.currentConcept,
+    currentQuestionId: state.currentQuestionId,
+    stageIndex: state.stageIndex,
+    stageCount: state.stageCount,
+    stagedAnswers: [...state.stagedAnswers],
+    supportCount: state.supportCount,
+    recoveryCount: state.recoveryCount,
+    completedQuestionIds: [...state.completedQuestionIds],
+    lastOutcome: state.lastOutcome,
+    complete: state.complete,
+  };
+}
+
+export function restoreQuizEngineState<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(
+  snapshot: Partial<QuizEngineSnapshot<TQuestion>> | null | undefined,
+  options: {
+    question?: TQuestion | null;
+    fallback?: Partial<QuizEngineState<TQuestion>>;
+    route?: string | null;
+  } = {}
+): QuizEngineState<TQuestion> {
+  const fallback = createQuizEngineState<TQuestion>(options.fallback ?? {});
+  const question = options.question ?? fallback.currentQuestion ?? null;
+  const fallbackStageCount = readStageCount(question, readPositiveInteger(fallback.stageCount, 1));
+  const stageCount = readPositiveInteger(snapshot?.stageCount, fallbackStageCount);
+  const maxStageIndex = Math.max(stageCount - 1, 0);
+  const fallbackStageIndex = readNonNegativeInteger(fallback.stageIndex, 0);
+  const stageIndex = Math.min(readNonNegativeInteger(snapshot?.stageIndex, fallbackStageIndex), maxStageIndex);
+  const stagedAnswers = readStringList(snapshot?.stagedAnswers, fallback.stagedAnswers);
+  const complete = typeof snapshot?.complete === 'boolean' ? snapshot.complete : fallback.complete;
+  const fallbackPhase = deriveQuizEnginePhase({
+    question,
+    stageIndex,
+    stagedAnswers,
+    supportActive: fallback.phase === 'support',
+    recoveryActive: fallback.phase === 'recovery',
+    complete,
+  });
+  const route = 'route' in options
+    ? readNullableString(options.route, null)
+    : readNullableString(snapshot?.route, fallback.route);
+
+  return {
+    ...fallback,
+    phase: complete ? 'complete' : readQuizEnginePhase(snapshot?.phase, fallbackPhase),
+    route,
+    currentConcept: question?.concept ?? readNullableString(snapshot?.currentConcept, fallback.currentConcept),
+    currentQuestionId: question?.id ?? readNullableString(snapshot?.currentQuestionId, fallback.currentQuestionId),
+    currentQuestion: question,
+    stageIndex,
+    stageCount,
+    stagedAnswers,
+    supportCount: readNonNegativeInteger(snapshot?.supportCount, readNonNegativeInteger(fallback.supportCount, 0)),
+    recoveryCount: readNonNegativeInteger(snapshot?.recoveryCount, readNonNegativeInteger(fallback.recoveryCount, 0)),
+    completedQuestionIds: Array.from(new Set(readStringList(snapshot?.completedQuestionIds, fallback.completedQuestionIds))),
+    lastOutcome: readLastOutcome(snapshot?.lastOutcome, fallback.lastOutcome),
+    complete,
+  };
+}
+
 export function routeQuizEngine<TQuestion extends QuizEngineQuestion = QuizEngineQuestion>(
   state: QuizEngineState<TQuestion>,
   route: string,
