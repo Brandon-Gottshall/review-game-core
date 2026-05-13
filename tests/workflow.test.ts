@@ -23,9 +23,11 @@ import {
   advanceQuizStage,
   completeQuizQuestion,
   createQuizEngineState,
+  createQuizEngineSnapshot,
   enterRecoveryState,
   enterSupportState,
   reduceQuizEngine,
+  restoreQuizEngineState,
   routeQuizEngine,
   resetQuizEngine,
   selectQuizQuestion,
@@ -253,6 +255,93 @@ describe('workflow/debug', () => {
 });
 
 describe('workflow/quiz-engine', () => {
+  it('serializes and restores quiz-engine authority without a currentQuestion payload', () => {
+    const question = {
+      id: 'q-snapshot',
+      concept: 'functions',
+      type: 'free_response',
+      stageCount: 4,
+    };
+    const selected = selectQuizQuestion(createQuizEngineState(), question, { defaultStageCount: 4 });
+    const staged = syncQuizEngineQuestionState(selected, {
+      route: '/quiz?exam=n1&section=P.1',
+      question,
+      stageIndex: 2,
+      stageCount: 4,
+      stagedAnswers: ['recognize', 'structure'],
+      supportActive: true,
+      outcome: 'supported',
+    });
+
+    const snapshot = createQuizEngineSnapshot(staged);
+    const restored = restoreQuizEngineState(snapshot, {
+      question,
+      route: '/quiz?exam=n1&section=P.1&learnerId=student%40example.com',
+    });
+
+    expect(snapshot).toEqual({
+      phase: 'support',
+      route: '/quiz?exam=n1&section=P.1',
+      currentConcept: 'functions',
+      currentQuestionId: 'q-snapshot',
+      stageIndex: 2,
+      stageCount: 4,
+      stagedAnswers: ['recognize', 'structure'],
+      supportCount: 0,
+      recoveryCount: 0,
+      completedQuestionIds: [],
+      lastOutcome: 'supported',
+      complete: false,
+    });
+    expect(restored.phase).toBe('support');
+    expect(restored.route).toBe('/quiz?exam=n1&section=P.1&learnerId=student%40example.com');
+    expect(restored.currentQuestion).toEqual(question);
+    expect(restored.stageIndex).toBe(2);
+    expect(restored.stageCount).toBe(4);
+    expect(restored.stagedAnswers).toEqual(['recognize', 'structure']);
+    expect(restored.lastOutcome).toBe('supported');
+  });
+
+  it('restores legacy partial workflow records by falling back to a valid engine state', () => {
+    const question = {
+      id: 'q-legacy-workflow',
+      concept: 'linear-equations',
+      type: 'multiple_choice',
+      stageCount: 3,
+    };
+    const fallback = syncQuizEngineQuestionState(createQuizEngineState<typeof question>(), {
+      route: '/quiz?exam=n2&section=1.2',
+      question,
+      stageIndex: 1,
+      stageCount: 3,
+      stagedAnswers: ['setup'],
+      outcome: 'answered',
+    });
+
+    const restored = restoreQuizEngineState(
+      {
+        phase: 'recovery',
+        stageIndex: 99,
+        stageCount: 0,
+        stagedAnswers: ['setup', 3, null] as unknown as string[],
+        lastOutcome: 'unknown' as never,
+        complete: false,
+      },
+      {
+        question,
+        fallback,
+      }
+    );
+
+    expect(restored.phase).toBe('recovery');
+    expect(restored.currentQuestionId).toBe('q-legacy-workflow');
+    expect(restored.currentConcept).toBe('linear-equations');
+    expect(restored.stageCount).toBe(3);
+    expect(restored.stageIndex).toBe(2);
+    expect(restored.stagedAnswers).toEqual(['setup']);
+    expect(restored.lastOutcome).toBe('answered');
+  });
+
   it('routes, stages, supports, recovers, and completes deterministically', () => {
     const question = {
       id: 'q-1',

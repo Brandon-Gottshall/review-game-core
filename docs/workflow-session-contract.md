@@ -96,6 +96,15 @@ Core does not guarantee that arbitrary consumer state inside `state` or `metadat
 
 That remains consumer-owned.
 
+When a consumer persists quiz-turn state, it should store the serializable quiz-engine authority in `state.workflow` by using:
+
+- `createQuizEngineSnapshot(...)`
+- `restoreQuizEngineState(...)`
+
+That keeps the authoritative phase, stage index, support/recovery state, completion state, and staged answers in the shared workflow contract instead of in app-specific phase metadata.
+
+Consumers may keep legacy partial workflow records readable by passing them through `restoreQuizEngineState(...)` with a valid fallback derived from their current question/checkpoint state.
+
 ## Persistence seam
 
 `workflow/persistence` owns:
