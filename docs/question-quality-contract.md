@@ -210,3 +210,22 @@ Consumers remain responsible for:
 - local lint rules and authoring QA
 - renderer decisions and shell presentation
 - course-specific completion, grading, and release policy
+
+## Deterministic WF harness rules
+
+WF-harness Group 8 is optional. When configured, it runs deterministic question-quality rules over consumer-supplied `QuestionQualityItem` records.
+
+Core provides reusable rule builders for the shared failure classes:
+
+- `createContextLeakageRule`
+- `createSignalFailureRule`
+- `createStructureHelperLeakageRule`
+- `createSubskillGoalConflationRule`
+- `createInstructionValidatorDivergenceRule`
+- `createDistractorCollapseRule`
+
+These builders own the shared semantics: what counts as context leakage, signal absence, helper leakage, subskill/goal conflation, instruction/validator divergence, or distractor collapse at the contract level.
+
+Consumers still own subject vocabulary. Concept names, regexes, stage labels, answer-unit extractors, and misconception-family classifiers stay in the consumer adapter and are passed into the core builders as predicates or extractors.
+
+Group 8 is regression evidence. It can block known bad authored states, but it does not replace low-context WF when the visible learner flow or answerability contract changes.

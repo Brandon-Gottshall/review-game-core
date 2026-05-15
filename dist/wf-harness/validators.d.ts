@@ -69,6 +69,35 @@ export type QuestionQualityPredicateRule = {
     evaluate: (item: QuestionQualityItem) => QuestionQualityPredicateResult;
 };
 export type QuestionQualityRule = QuestionQualityPatternRule | QuestionQualityPredicateRule;
+export type QuestionQualityAppliesTo = (item: QuestionQualityItem) => boolean;
+export interface BaseQuestionQualityRuleBuilderOptions {
+    id: string;
+    appliesTo?: QuestionQualityAppliesTo;
+    message?: string;
+}
+export interface ContextLeakageRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+    hasLeakage: (item: QuestionQualityItem) => boolean;
+}
+export interface SignalFailureRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+    hasRequiredSignal: (item: QuestionQualityItem) => boolean;
+}
+export interface StructureHelperLeakageRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+    hasHelperLeakage: (item: QuestionQualityItem) => boolean;
+}
+export interface SubskillGoalConflationRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+    isLocalSubskillCheck: (item: QuestionQualityItem) => boolean;
+    reconnectsToGoal: (item: QuestionQualityItem) => boolean;
+}
+export interface InstructionValidatorDivergenceRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+    getInstructionExpectation: (item: QuestionQualityItem) => unknown;
+    getValidatorExpectation: (item: QuestionQualityItem) => unknown;
+    expectationsMatch?: (instructionExpectation: unknown, validatorExpectation: unknown, item: QuestionQualityItem) => boolean;
+}
+export interface DistractorCollapseRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+    getChoices: (item: QuestionQualityItem) => string | readonly string[] | null | undefined;
+    normalizeChoice?: (choice: string) => string;
+    minimumDistinctChoices?: number;
+}
 export interface WFHarnessQuestionQualityConfig {
     items: readonly QuestionQualityItem[];
     rules: readonly QuestionQualityRule[];
@@ -108,6 +137,12 @@ export declare const WF_GROUP_NAMES: {
     readonly 8: "Question quality";
 };
 export declare const WF_SAMPLE_SEEDS: readonly [1, 42, 100, 2024, 99999];
+export declare function createContextLeakageRule(options: ContextLeakageRuleOptions): QuestionQualityPredicateRule;
+export declare function createSignalFailureRule(options: SignalFailureRuleOptions): QuestionQualityPredicateRule;
+export declare function createStructureHelperLeakageRule(options: StructureHelperLeakageRuleOptions): QuestionQualityPredicateRule;
+export declare function createSubskillGoalConflationRule(options: SubskillGoalConflationRuleOptions): QuestionQualityPredicateRule;
+export declare function createInstructionValidatorDivergenceRule(options: InstructionValidatorDivergenceRuleOptions): QuestionQualityPredicateRule;
+export declare function createDistractorCollapseRule(options: DistractorCollapseRuleOptions): QuestionQualityPredicateRule;
 export declare function validateTypeCoverage<TType extends string, TSubskill extends string = string>(config: WFHarnessConfig<TType, TSubskill>): ValidationResult[];
 export declare function validateRenderDispatch<TType extends string, TSubskill extends string = string>(config: WFHarnessConfig<TType, TSubskill>): ValidationResult[];
 export declare function validateInteractivePayloadShape<TType extends string, TSubskill extends string = string>(config: WFHarnessConfig<TType, TSubskill>): ValidationResult[];

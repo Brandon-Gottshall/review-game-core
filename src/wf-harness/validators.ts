@@ -109,6 +109,47 @@ export type QuestionQualityRule =
   | QuestionQualityPatternRule
   | QuestionQualityPredicateRule;
 
+export type QuestionQualityAppliesTo = (item: QuestionQualityItem) => boolean;
+
+export interface BaseQuestionQualityRuleBuilderOptions {
+  id: string;
+  appliesTo?: QuestionQualityAppliesTo;
+  message?: string;
+}
+
+export interface ContextLeakageRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+  hasLeakage: (item: QuestionQualityItem) => boolean;
+}
+
+export interface SignalFailureRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+  hasRequiredSignal: (item: QuestionQualityItem) => boolean;
+}
+
+export interface StructureHelperLeakageRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+  hasHelperLeakage: (item: QuestionQualityItem) => boolean;
+}
+
+export interface SubskillGoalConflationRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+  isLocalSubskillCheck: (item: QuestionQualityItem) => boolean;
+  reconnectsToGoal: (item: QuestionQualityItem) => boolean;
+}
+
+export interface InstructionValidatorDivergenceRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+  getInstructionExpectation: (item: QuestionQualityItem) => unknown;
+  getValidatorExpectation: (item: QuestionQualityItem) => unknown;
+  expectationsMatch?: (
+    instructionExpectation: unknown,
+    validatorExpectation: unknown,
+    item: QuestionQualityItem
+  ) => boolean;
+}
+
+export interface DistractorCollapseRuleOptions extends BaseQuestionQualityRuleBuilderOptions {
+  getChoices: (item: QuestionQualityItem) => string | readonly string[] | null | undefined;
+  normalizeChoice?: (choice: string) => string;
+  minimumDistinctChoices?: number;
+}
+
 export interface WFHarnessQuestionQualityConfig {
   items: readonly QuestionQualityItem[];
   rules: readonly QuestionQualityRule[];
@@ -232,6 +273,142 @@ function collectQuestionQualityText(
 function normalizePredicateResult(result: QuestionQualityPredicateResult): string[] {
   if (!result) return [];
   return typeof result === 'string' ? [result] : [...result];
+}
+
+function shouldEvaluateQuestionQualityRule(
+  item: QuestionQualityItem,
+  appliesTo?: QuestionQualityAppliesTo
+): boolean {
+  return appliesTo ? appliesTo(item) : true;
+}
+
+function withQuestionQualityMessage(
+  message: string | undefined,
+  detail?: string
+): string {
+  if (message && detail) return `${message}: ${detail}`;
+  return detail ?? message ?? 'rule failed';
+}
+
+function formatExpectationForDiagnostic(value: unknown): string {
+  if (typeof value === 'string') return value;
+  return formatDiagnostic(value);
+}
+
+function normalizeQuestionQualityChoices(
+  value: string | readonly string[] | null | undefined
+): string[] {
+  if (Array.isArray(value)) return [...value];
+  if (typeof value === 'string') {
+    return value
+      .split(/\r?\n/)
+      .map((choice) => choice.trim())
+      .filter((choice) => choice.length > 0);
+  }
+  return [];
+}
+
+export function createContextLeakageRule(
+  options: ContextLeakageRuleOptions
+): QuestionQualityPredicateRule {
+  return {
+    id: options.id,
+    issueClass: 'context_leakage',
+    evaluate(item) {
+      if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo)) return false;
+      return options.hasLeakage(item) ? withQuestionQualityMessage(options.message) : false;
+    },
+  };
+}
+
+export function createSignalFailureRule(
+  options: SignalFailureRuleOptions
+): QuestionQualityPredicateRule {
+  return {
+    id: options.id,
+    issueClass: 'signal_failure',
+    evaluate(item) {
+      if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo)) return false;
+      return options.hasRequiredSignal(item) ? false : withQuestionQualityMessage(options.message);
+    },
+  };
+}
+
+export function createStructureHelperLeakageRule(
+  options: StructureHelperLeakageRuleOptions
+): QuestionQualityPredicateRule {
+  return {
+    id: options.id,
+    issueClass: 'structure_helper_leakage',
+    evaluate(item) {
+      if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo)) return false;
+      return options.hasHelperLeakage(item) ? withQuestionQualityMessage(options.message) : false;
+    },
+  };
+}
+
+export function createSubskillGoalConflationRule(
+  options: SubskillGoalConflationRuleOptions
+): QuestionQualityPredicateRule {
+  return {
+    id: options.id,
+    issueClass: 'subskill_goal_conflation',
+    evaluate(item) {
+      if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo)) return false;
+      if (!options.isLocalSubskillCheck(item)) return false;
+      return options.reconnectsToGoal(item) ? false : withQuestionQualityMessage(options.message);
+    },
+  };
+}
+
+export function createInstructionValidatorDivergenceRule(
+  options: InstructionValidatorDivergenceRuleOptions
+): QuestionQualityPredicateRule {
+  return {
+    id: options.id,
+    issueClass: 'instruction_validator_divergence',
+    evaluate(item) {
+      if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo)) return false;
+      const instructionExpectation = options.getInstructionExpectation(item);
+      const validatorExpectation = options.getValidatorExpectation(item);
+      const matches = options.expectationsMatch
+        ? options.expectationsMatch(instructionExpectation, validatorExpectation, item)
+        : isDeepStrictEqual(instructionExpectation, validatorExpectation);
+      if (matches) return false;
+
+      return withQuestionQualityMessage(
+        options.message,
+        `instruction=${formatExpectationForDiagnostic(instructionExpectation)} validator=${formatExpectationForDiagnostic(validatorExpectation)}`
+      );
+    },
+  };
+}
+
+export function createDistractorCollapseRule(
+  options: DistractorCollapseRuleOptions
+): QuestionQualityPredicateRule {
+  return {
+    id: options.id,
+    issueClass: 'distractor_collapse',
+    evaluate(item) {
+      if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo)) return false;
+
+      const choices = normalizeQuestionQualityChoices(options.getChoices(item));
+      if (choices.length === 0) return false;
+
+      const normalizeChoice = options.normalizeChoice ?? ((choice: string) => choice.trim().toLowerCase());
+      const uniqueChoices = new Set(
+        choices
+          .map(normalizeChoice)
+          .filter((choice) => choice.length > 0)
+      );
+      const minimumDistinctChoices = options.minimumDistinctChoices ?? choices.length;
+
+      return uniqueChoices.size >= minimumDistinctChoices
+        ? false
+        : withQuestionQualityMessage(options.message);
+    },
+  };
 }
 
 function getNodeBuiltinModule(specifier: string): unknown {

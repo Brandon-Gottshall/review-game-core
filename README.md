@@ -21,7 +21,7 @@ The Vercel project for the site is `review-game-core-site`, attached to the `Bra
 - concept scheduling, including a shared guided repetition layer
 - planning / goal evaluation
 - workflow session, persistence, debug, and quiz-engine helpers
-- WF harness validators
+- WF harness validators, including optional Group 8 question-quality rule builders for deterministic leakage, signal, helper, subskill/goal, validator, and distractor checks
 - graph contracts, query helpers, and projector interfaces
 
 ## Product framing

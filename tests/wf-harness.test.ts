@@ -5,6 +5,12 @@ import type { Generator } from '../src/generator/index.js';
 import type { Question } from '../src/question/index.js';
 import {
   WF_GROUP_NAMES,
+  createContextLeakageRule,
+  createDistractorCollapseRule,
+  createInstructionValidatorDivergenceRule,
+  createSignalFailureRule,
+  createStructureHelperLeakageRule,
+  createSubskillGoalConflationRule,
   groupValidationResults,
   validateAll,
   validateConceptConsistency,
@@ -399,6 +405,194 @@ describe('validateQuestionQuality', () => {
   });
 });
 
+describe('question quality rule builders', () => {
+  it('builds context leakage rules from consumer predicates', () => {
+    const config = createBaseConfig();
+    config.questionQuality = {
+      items: [
+        {
+          id: 'q-context',
+          conceptId: 'equations',
+          stage: 'recognition',
+          visibleText: { prompt: 'Which linear equation rule applies?' },
+          metadata: { leaks: true },
+        },
+      ],
+      rules: [
+        createContextLeakageRule({
+          id: 'test-context',
+          hasLeakage: (item) => item.metadata?.leaks === true,
+          message: 'prompt names the target concept',
+        }),
+      ],
+    };
+
+    const result = validateQuestionQuality(config).find((item) =>
+      item.name.includes('items satisfy configured')
+    );
+
+    expect(result?.passed).toBe(false);
+    expect(result?.failures).toEqual([
+      'q-context: context_leakage from test-context (prompt names the target concept)',
+    ]);
+  });
+
+  it('builds signal failure rules when required visible evidence is absent', () => {
+    const config = createBaseConfig();
+    config.questionQuality = {
+      items: [
+        {
+          id: 'q-signal',
+          conceptId: 'fractions',
+          stage: 'recognition',
+          visibleText: { prompt: 'What should happen next?' },
+          metadata: { hasSignal: false },
+        },
+      ],
+      rules: [
+        createSignalFailureRule({
+          id: 'test-signal',
+          hasRequiredSignal: (item) => item.metadata?.hasSignal === true,
+          message: 'no visible cue supports the recognition task',
+        }),
+      ],
+    };
+
+    const result = validateQuestionQuality(config).find((item) =>
+      item.name.includes('items satisfy configured')
+    );
+
+    expect(result?.failures).toEqual([
+      'q-signal: signal_failure from test-signal (no visible cue supports the recognition task)',
+    ]);
+  });
+
+  it('builds helper leakage rules when support text gives away structure', () => {
+    const config = createBaseConfig();
+    config.questionQuality = {
+      items: [
+        {
+          id: 'q-helper',
+          conceptId: 'logs',
+          stage: 'structure',
+          visibleText: { hint: 'Use the quotient rule.' },
+          metadata: { helperLeak: true },
+        },
+      ],
+      rules: [
+        createStructureHelperLeakageRule({
+          id: 'test-helper',
+          hasHelperLeakage: (item) => item.metadata?.helperLeak === true,
+          message: 'support text gives away the structure',
+        }),
+      ],
+    };
+
+    const result = validateQuestionQuality(config).find((item) =>
+      item.name.includes('items satisfy configured')
+    );
+
+    expect(result?.failures).toEqual([
+      'q-helper: structure_helper_leakage from test-helper (support text gives away the structure)',
+    ]);
+  });
+
+  it('builds subskill-goal conflation rules for local checks not tied back to the goal', () => {
+    const config = createBaseConfig();
+    config.questionQuality = {
+      items: [
+        {
+          id: 'q-subskill',
+          conceptId: 'linear-equations',
+          stage: 'structure',
+          visibleText: { prompt: 'Simplify the left side.' },
+          metadata: { localSubskill: true, reconnectsToGoal: false },
+        },
+      ],
+      rules: [
+        createSubskillGoalConflationRule({
+          id: 'test-subskill-goal',
+          isLocalSubskillCheck: (item) => item.metadata?.localSubskill === true,
+          reconnectsToGoal: (item) => item.metadata?.reconnectsToGoal === true,
+          message: 'local subskill is not framed against the full goal',
+        }),
+      ],
+    };
+
+    const result = validateQuestionQuality(config).find((item) =>
+      item.name.includes('items satisfy configured')
+    );
+
+    expect(result?.failures).toEqual([
+      'q-subskill: subskill_goal_conflation from test-subskill-goal (local subskill is not framed against the full goal)',
+    ]);
+  });
+
+  it('builds instruction-validator divergence rules for mismatched answer expectations', () => {
+    const config = createBaseConfig();
+    config.questionQuality = {
+      items: [
+        {
+          id: 'q-unit',
+          conceptId: 'percent',
+          visibleText: { formatHint: 'Enter a percent.' },
+          metadata: { instructionUnit: 'percent', validatorUnit: 'raw-number' },
+        },
+      ],
+      rules: [
+        createInstructionValidatorDivergenceRule({
+          id: 'test-validator',
+          getInstructionExpectation: (item) => item.metadata?.instructionUnit,
+          getValidatorExpectation: (item) => item.metadata?.validatorUnit,
+          message: 'visible instructions and validator unit differ',
+        }),
+      ],
+    };
+
+    const result = validateQuestionQuality(config).find((item) =>
+      item.name.includes('items satisfy configured')
+    );
+
+    expect(result?.failures).toEqual([
+      'q-unit: instruction_validator_divergence from test-validator (visible instructions and validator unit differ: instruction=percent validator=raw-number)',
+    ]);
+  });
+
+  it('builds distractor collapse rules for duplicate normalized choices', () => {
+    const config = createBaseConfig();
+    config.questionQuality = {
+      items: [
+        {
+          id: 'q-distractors',
+          conceptId: 'intervals',
+          visibleText: { choices: ['Use a bracket', 'use a bracket', 'Use a parenthesis'] },
+        },
+      ],
+      rules: [
+        createDistractorCollapseRule({
+          id: 'test-distractors',
+          getChoices: (item) => item.visibleText.choices,
+          message: 'choices must remain distinct after normalization',
+        }),
+      ],
+    };
+
+    const result = validateQuestionQuality(config).find((item) =>
+      item.name.includes('items satisfy configured')
+    );
+
+    expect(result?.failures).toEqual([
+      'q-distractors: distractor_collapse from test-distractors (choices must remain distinct after normalization)',
+    ]);
+  });
+});
+
 describe('createWFHarness(vitest)', () => {
+  it('exposes an explicit Group 8 runner', () => {
+    const harness = createWFHarness(createBaseConfig());
+
+    expect(typeof harness.group8_questionQuality).toBe('function');
+  });
+
   createWFHarness(createBaseConfig()).all();
 });
