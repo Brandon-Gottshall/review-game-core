@@ -5,6 +5,7 @@ import {
   validateConceptConsistency,
   validateGeneratorDeterminism,
   validateInteractivePayloadShape,
+  validateQuestionQuality,
   validateRenderDispatch,
   validateSchedulerHarness,
   validateTypeCoverage,
@@ -60,6 +61,9 @@ export function createWFHarness<TType extends string, TSubskill extends string =
     },
     group7_schedulerCoverage() {
       registerResults(validateSchedulerHarness(config));
+    },
+    group8_questionQuality() {
+      registerResults(validateQuestionQuality(config));
     },
     all() {
       registerResults(validateAll(config));

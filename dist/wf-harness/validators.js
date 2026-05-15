@@ -80,6 +80,115 @@ function normalizePredicateResult(result) {
         return [];
     return typeof result === 'string' ? [result] : [...result];
 }
+function shouldEvaluateQuestionQualityRule(item, appliesTo) {
+    return appliesTo ? appliesTo(item) : true;
+}
+function withQuestionQualityMessage(message, detail) {
+    if (message && detail)
+        return `${message}: ${detail}`;
+    return detail ?? message ?? 'rule failed';
+}
+function formatExpectationForDiagnostic(value) {
+    if (typeof value === 'string')
+        return value;
+    return formatDiagnostic(value);
+}
+function normalizeQuestionQualityChoices(value) {
+    if (Array.isArray(value))
+        return [...value];
+    if (typeof value === 'string') {
+        return value
+            .split(/\r?\n/)
+            .map((choice) => choice.trim())
+            .filter((choice) => choice.length > 0);
+    }
+    return [];
+}
+export function createContextLeakageRule(options) {
+    return {
+        id: options.id,
+        issueClass: 'context_leakage',
+        evaluate(item) {
+            if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo))
+                return false;
+            return options.hasLeakage(item) ? withQuestionQualityMessage(options.message) : false;
+        },
+    };
+}
+export function createSignalFailureRule(options) {
+    return {
+        id: options.id,
+        issueClass: 'signal_failure',
+        evaluate(item) {
+            if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo))
+                return false;
+            return options.hasRequiredSignal(item) ? false : withQuestionQualityMessage(options.message);
+        },
+    };
+}
+export function createStructureHelperLeakageRule(options) {
+    return {
+        id: options.id,
+        issueClass: 'structure_helper_leakage',
+        evaluate(item) {
+            if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo))
+                return false;
+            return options.hasHelperLeakage(item) ? withQuestionQualityMessage(options.message) : false;
+        },
+    };
+}
+export function createSubskillGoalConflationRule(options) {
+    return {
+        id: options.id,
+        issueClass: 'subskill_goal_conflation',
+        evaluate(item) {
+            if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo))
+                return false;
+            if (!options.isLocalSubskillCheck(item))
+                return false;
+            return options.reconnectsToGoal(item) ? false : withQuestionQualityMessage(options.message);
+        },
+    };
+}
+export function createInstructionValidatorDivergenceRule(options) {
+    return {
+        id: options.id,
+        issueClass: 'instruction_validator_divergence',
+        evaluate(item) {
+            if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo))
+                return false;
+            const instructionExpectation = options.getInstructionExpectation(item);
+            const validatorExpectation = options.getValidatorExpectation(item);
+            const matches = options.expectationsMatch
+                ? options.expectationsMatch(instructionExpectation, validatorExpectation, item)
+                : isDeepStrictEqual(instructionExpectation, validatorExpectation);
+            if (matches)
+                return false;
+            return withQuestionQualityMessage(options.message, `instruction=${formatExpectationForDiagnostic(instructionExpectation)} validator=${formatExpectationForDiagnostic(validatorExpectation)}`);
+        },
+    };
+}
+export function createDistractorCollapseRule(options) {
+    return {
+        id: options.id,
+        issueClass: 'distractor_collapse',
+        evaluate(item) {
+            if (!shouldEvaluateQuestionQualityRule(item, options.appliesTo))
+                return false;
+            const choices = normalizeQuestionQualityChoices(options.getChoices(item));
+            if (choices.length === 0)
+                return false;
+            const normalizeChoice = options.normalizeChoice ?? ((choice) => choice.trim().toLowerCase());
+            const uniqueChoices = new Set(choices
+                .map(normalizeChoice)
+                .filter((choice) => choice.length > 0));
+            const minimumDistinctChoices = options.minimumDistinctChoices ?? choices.length;
+            return uniqueChoices.size >= minimumDistinctChoices
+                ? false
+                : withQuestionQualityMessage(options.message);
+        },
+    };
+}
 function getNodeBuiltinModule(specifier) {
     const runtimeProcess = globalThis.process;
     return runtimeProcess?.getBuiltinModule?.(specifier);
